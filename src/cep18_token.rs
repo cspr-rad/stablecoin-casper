@@ -283,12 +283,12 @@ impl Cep18 {
 
     // Functions that are specific to CCTP start here
 
-    pub fn pause(&mut self, caller: &Address){
+    pub fn pause(&mut self){
         todo!("Require caller to be Role::Owner");
         self.paused.set(true);
     }
 
-    pub fn unpause(&mut self, caller:&Address){
+    pub fn unpause(&mut self){
         todo!("Require caller be Role::Owner");
         self.paused.set(false);
     }
