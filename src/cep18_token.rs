@@ -39,8 +39,12 @@ impl Cep18 {
         name: String,
         decimals: u8,
         initial_supply: U256,
-        owner_list: Vec<Address>,
+        admin_list: Vec<Address>,
         minter_list: Vec<Address>,
+        // master_minter_list
+        // owner_list
+        // pausers_list
+        // blacklister (only one)
         modality: Option<Cep18Modality>,
     ) {
         let caller = self.env().caller();
@@ -58,10 +62,10 @@ impl Cep18 {
         });
 
         // set the security badges
-        self.security_badges.set(&caller, SecurityBadge::Owner);
+        self.security_badges.set(&caller, SecurityBadge::Admin);
 
-        for owner in owner_list {
-            self.security_badges.set(&owner, SecurityBadge::Owner);
+        for owner in admin_list {
+            self.security_badges.set(&owner, SecurityBadge::Admin);
         }
 
         for minter in minter_list {
@@ -82,7 +86,7 @@ impl Cep18 {
     /// Beware: do not remove the last Owner because that will lock out all owner functionality.
     pub fn change_security(
         &mut self,
-        owner_list: Vec<Address>,
+        admin_list: Vec<Address>,
         minter_list: Vec<Address>,
         none_list: Vec<Address>,
     ) {
@@ -95,16 +99,16 @@ impl Cep18 {
             .get(&caller)
             .unwrap_or_revert_with(&self.env(), Error::InsufficientRights);
 
-        if !caller_badge.can_owner() {
+        if !caller_badge.can_admin() {
             self.env().revert(Error::InsufficientRights);
         }
 
         let mut badges_map = BTreeMap::new();
 
         // set the security badges
-        for owner in owner_list {
-            self.security_badges.set(&owner, SecurityBadge::Owner);
-            badges_map.insert(owner, SecurityBadge::Owner);
+        for owner in admin_list {
+            self.security_badges.set(&owner, SecurityBadge::Admin);
+            badges_map.insert(owner, SecurityBadge::Admin);
         }
 
         for minter in minter_list {
@@ -120,7 +124,7 @@ impl Cep18 {
         badges_map.remove(&caller);
 
         self.env().emit_event(ChangeSecurity {
-            owner: caller,
+            admin: caller,
             sec_change_map: badges_map,
         });
     }
@@ -319,16 +323,16 @@ impl Cep18 {
     /// Changes the security access granted to users without checking the permissions.
     pub fn raw_change_security(
         &mut self,
-        owner_list: Vec<Address>,
+        admin_list: Vec<Address>,
         minter_list: Vec<Address>,
         none_list: Vec<Address>,
     ) {
         let mut badges_map = BTreeMap::new();
 
         // set the security badges
-        for owner in owner_list {
-            self.security_badges.set(&owner, SecurityBadge::Owner);
-            badges_map.insert(owner, SecurityBadge::Owner);
+        for owner in admin_list {
+            self.security_badges.set(&owner, SecurityBadge::Admin);
+            badges_map.insert(owner, SecurityBadge::Admin);
         }
 
         for minter in minter_list {
@@ -342,7 +346,7 @@ impl Cep18 {
         }
 
         self.env().emit_event(ChangeSecurity {
-            owner: self.env().caller(),
+            admin: self.env().caller(),
             sec_change_map: badges_map,
         });
     }
@@ -390,7 +394,7 @@ pub(crate) mod tests {
             name: TOKEN_NAME.to_string(),
             decimals: TOKEN_DECIMALS,
             initial_supply: TOKEN_TOTAL_SUPPLY.into(),
-            owner_list: vec![],
+            admin_list: vec![],
             minter_list: vec![],
             modality: Some(modality),
         };

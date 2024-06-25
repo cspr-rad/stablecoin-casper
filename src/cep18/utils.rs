@@ -1,8 +1,8 @@
 /// Security badge that can be assigned to an account to grant it certain permissions.
 #[odra::odra_type]
 pub enum SecurityBadge {
-    /// The account is an admin.
-    Owner = 0,
+    /// The account is an owner.
+    Admin = 0,
     /// The account is a minter.
     Minter = 1,
     /// The account has no special permissions.
@@ -17,17 +17,19 @@ pub enum SecurityBadge {
     Pauser = 6,
     /// CCTP Controller.
     Controller = 7,
+    /// CCTP Owner
+    Owner = 8,
 }
 
 impl SecurityBadge {
     /// Returns true if the account has admin permissions.
-    pub fn can_owner(&self) -> bool {
-        matches!(self, SecurityBadge::Owner)
+    pub fn can_admin(&self) -> bool {
+        matches!(self, SecurityBadge::Admin)
     }
 
     /// Returns true if the account has minter or admin permissions.
     pub fn can_mint(&self) -> bool {
-        matches!(self, SecurityBadge::Minter | SecurityBadge::Owner)
+        matches!(self, SecurityBadge::Minter | SecurityBadge::Admin)
     }
 }
 /// Modality of the CEP-18 contract.

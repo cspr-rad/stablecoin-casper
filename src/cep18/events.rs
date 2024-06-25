@@ -87,7 +87,7 @@ pub struct TransferFrom {
 #[odra::event]
 pub struct ChangeSecurity {
     /// The address of the administrator which perfomed the change.
-    pub owner: Address,
+    pub admin: Address,
     /// The map of changes made to the security rules.
     pub sec_change_map: BTreeMap<Address, SecurityBadge>,
 }
