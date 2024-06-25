@@ -23,13 +23,18 @@ pub enum SecurityBadge {
 
 impl SecurityBadge {
     /// Returns true if the account has admin permissions.
-    pub fn can_admin(&self) -> bool {
+    pub fn has_admin(&self) -> bool {
         matches!(self, SecurityBadge::Admin)
     }
 
     /// Returns true if the account has minter or admin permissions.
-    pub fn can_mint(&self) -> bool {
+    pub fn has_mint(&self) -> bool {
         matches!(self, SecurityBadge::Minter | SecurityBadge::Admin)
+    }
+
+    /// Returns true if the account is blacklisted
+    pub fn has_blacklisted(&self) -> bool{
+        matches!(self, SecurityBadge::Blacklisted)
     }
 }
 /// Modality of the CEP-18 contract.

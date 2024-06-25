@@ -102,7 +102,7 @@ impl Cep18 {
             .get(&caller)
             .unwrap_or_revert_with(&self.env(), Error::InsufficientRights);
 
-        if !caller_badge.can_admin() {
+        if !caller_badge.has_admin() {
             self.env().revert(Error::InsufficientRights);
         }
 
@@ -259,7 +259,7 @@ impl Cep18 {
             .security_badges
             .get(&self.env().caller())
             .unwrap_or_revert_with(&self.env(), Error::InsufficientRights);
-        if !security_badge.can_mint() {
+        if !security_badge.has_mint() {
             self.env().revert(Error::InsufficientRights);
         }
 
@@ -311,42 +311,20 @@ impl Cep18 {
 
     /// Will return true if the account is a minter
     pub fn is_minter(&self, account: &Address) -> bool {
-        let maybe_batch = self.security_badges.get(account);
-        match maybe_batch {
-            Some(badge) => {
-                match badge {
-                    SecurityBadge::Minter => {
-                        true
-                    },
-                    _ => {
-                        false
-                    }
-                }
-            },
-            None => {
-                false
-            }
-        }
+        let account_badge = self
+            .security_badges
+            .get(&account)
+            .unwrap_or_revert_with(&self.env(), Error::InsufficientRights);
+        account_badge.has_mint()
     }
 
     /// Will return true if the account is currently blacklisted
     pub fn is_blacklisted(&self, account: &Address) -> bool {
-        let maybe_batch = self.security_badges.get(account);
-        match maybe_batch {
-            Some(badge) => {
-                match badge {
-                    SecurityBadge::Blacklisted => {
-                        true
-                    },
-                    _ => {
-                        false
-                    }
-                }
-            },
-            None => {
-                false
-            }
-        }
+        let account_badge = self
+            .security_badges
+            .get(&account)
+            .unwrap_or_revert_with(&self.env(), Error::InsufficientRights);
+        account_badge.has_blacklisted()
     }
 
     // Functions that are specific to CCTP end here
