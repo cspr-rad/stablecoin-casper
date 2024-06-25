@@ -109,9 +109,9 @@ impl Cep18 {
         let mut badges_map = BTreeMap::new();
 
         // set the security badges
-        for owner in admin_list {
-            self.security_badges.set(&owner, SecurityBadge::Admin);
-            badges_map.insert(owner, SecurityBadge::Admin);
+        for admin in admin_list {
+            self.security_badges.set(&admin, SecurityBadge::Admin);
+            badges_map.insert(admin, SecurityBadge::Admin);
         }
 
         for minter in minter_list {
@@ -293,6 +293,17 @@ impl Cep18 {
         self.paused.set(false);
     }
 
+    pub fn blacklist(&mut self, account: &Address){
+        todo!("Require caller to be Role::Blacklister");
+        // add Blacklist Role to account
+        self.security_badges.set(&account, SecurityBadge::Blacklisted);
+    }
+
+    pub fn unblacklist(&mut self, account: &Address){
+        todo!("Require caller to be Role::Blacklister");
+        // remove Blacklist Role from account
+        self.security_badges.set(&account, SecurityBadge::None);
+    }
     // Functions that are specific to CCTP end here
 }
 
@@ -347,9 +358,9 @@ impl Cep18 {
         let mut badges_map = BTreeMap::new();
 
         // set the security badges
-        for owner in admin_list {
-            self.security_badges.set(&owner, SecurityBadge::Admin);
-            badges_map.insert(owner, SecurityBadge::Admin);
+        for admin in admin_list {
+            self.security_badges.set(&admin, SecurityBadge::Admin);
+            badges_map.insert(admin, SecurityBadge::Admin);
         }
 
         for minter in minter_list {
@@ -438,17 +449,17 @@ pub(crate) mod tests {
         assert_eq!(cep18_token.decimals(), TOKEN_DECIMALS);
         assert_eq!(cep18_token.total_supply(), TOKEN_TOTAL_SUPPLY.into());
 
-        let owner_key = cep18_token.env().caller();
-        let owner_balance = cep18_token.balance_of(&owner_key);
-        assert_eq!(owner_balance, TOKEN_TOTAL_SUPPLY.into());
+        let admin_key = cep18_token.env().caller();
+        let admin_balance = cep18_token.balance_of(&admin_key);
+        assert_eq!(admin_balance, TOKEN_TOTAL_SUPPLY.into());
 
         let contract_balance = cep18_token.balance_of(cep18_token.address());
         assert_eq!(contract_balance, 0.into());
 
         // Ensures that Account and Contract ownership is respected, and we're not keying ownership under
         // the raw bytes regardless of variant.
-        let inverted_owner_key = invert_address(owner_key);
-        let inverted_owner_balance = cep18_token.balance_of(&inverted_owner_key);
-        assert_eq!(inverted_owner_balance, 0.into());
+        let inverted_admin_key = invert_address(admin_key);
+        let inverted_admin_balance = cep18_token.balance_of(&inverted_admin_key);
+        assert_eq!(inverted_admin_balance, 0.into());
     }
 }
