@@ -1,4 +1,6 @@
 //! CEP-18 Casper Fungible Token standard implementation.
+use core::ops::Add;
+
 use odra::prelude::*;
 use odra::{casper_types::U256, Address, Mapping, SubModule, UnwrapOrRevert, Var};
 
@@ -27,6 +29,7 @@ pub struct Cep18 {
     /// This stores all CCTP Roles (MasterMinters, Owners, Pauser, ...)
     security_badges: Mapping<Address, SecurityBadge>,
     modality: Var<Cep18Modality>,
+    paused: Var<bool>,
 }
 
 #[odra::module]
@@ -277,6 +280,20 @@ impl Cep18 {
 
         self.raw_burn(owner, amount);
     }
+
+    // Functions that are specific to CCTP start here
+
+    pub fn pause(&mut self, caller: &Address){
+        todo!("Require caller to be Role::Owner");
+        self.paused.set(true);
+    }
+
+    pub fn unpause(&mut self, caller:&Address){
+        todo!("Require caller be Role::Owner");
+        self.paused.set(false);
+    }
+
+    // Functions that are specific to CCTP end here
 }
 
 impl Cep18 {
