@@ -53,7 +53,7 @@ mod allowance_tests {
     fn should_approve_funds() {
         // given a token
         let mut cep18_token = setup(false);
-        let owner = cep18_token.env().get_account(0);
+        let owner = cep18_token.env().caller();
         let alice = cep18_token.env().get_account(1);
         let token_address = *cep18_token.address();
         let client_contract = Cep18ClientContractHostRef::deploy(cep18_token.env(), NoArgs);
@@ -110,7 +110,7 @@ mod allowance_tests {
     fn should_not_transfer_from_without_enough_allowance() {
         // given a token
         let mut cep18_token = setup(false);
-        let owner = cep18_token.env().get_account(0);
+        let owner = cep18_token.env().caller();
         let alice = cep18_token.env().get_account(1);
 
         // when the owner approves the spender to spend tokens on their behalf
@@ -136,7 +136,7 @@ mod allowance_tests {
     fn test_decrease_allowance() {
         // given a token
         let mut cep18_token = setup(false);
-        let owner = cep18_token.env().get_account(0);
+        let owner = cep18_token.env().caller();
         let alice = cep18_token.env().get_account(1);
 
         // when the owner approves the spender to spend tokens on their behalf

@@ -33,10 +33,11 @@ impl SecurityBadge {
     }
 
     /// Returns true if the account is blacklisted
-    pub fn has_blacklisted(&self) -> bool{
+    pub fn has_blacklisted(&self) -> bool {
         matches!(self, SecurityBadge::Blacklisted)
     }
 }
+
 /// Modality of the CEP-18 contract.
 #[derive(Default)]
 #[odra::odra_type]

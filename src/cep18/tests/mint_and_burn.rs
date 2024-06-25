@@ -104,7 +104,7 @@ mod mint_and_burn_tests {
         let bob = cep18_token.env().get_account(2);
         let amount = TRANSFER_AMOUNT_1.into();
 
-        // an owner can mint tokens
+        // an admin can mint tokens
         cep18_token.mint(&alice, &amount);
         cep18_token.mint(&bob, &amount);
 
@@ -153,7 +153,7 @@ mod mint_and_burn_tests {
 
     #[test]
     fn test_change_security() {
-        // given a token with mint and burn enabled, and alice set as an owner
+        // given a token with mint and burn enabled, and alice set as an admin
         let env = odra_test::env();
         let owner = env.get_account(0);
         let alice = env.get_account(1);
@@ -168,7 +168,7 @@ mod mint_and_burn_tests {
         };
         let mut cep18_token = setup_with_args(&env, args);
 
-        // when alice removes an owner from owner list
+        // when alice removes an owner from admin list
         cep18_token.env().set_caller(alice);
         cep18_token.change_security(vec![], vec![], vec![owner]);
 

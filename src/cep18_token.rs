@@ -11,7 +11,8 @@ use crate::cep18::events::{
     TransferFrom,
 };
 use crate::cep18::storage::{
-    Cep18AllowancesStorage, Cep18BalancesStorage, Cep18DecimalsStorage, Cep18MinterAllowancesStorage, Cep18NameStorage, Cep18SymbolStorage, Cep18TotalSupplyStorage
+    Cep18AllowancesStorage, Cep18BalancesStorage, Cep18DecimalsStorage,
+    Cep18MinterAllowancesStorage, Cep18NameStorage, Cep18SymbolStorage, Cep18TotalSupplyStorage,
 };
 use crate::cep18::utils::{Cep18Modality, SecurityBadge};
 
@@ -43,6 +44,7 @@ impl Cep18 {
         decimals: u8,
         initial_supply: U256,
         admin_list: Vec<Address>,
+        // minter_list will be replaced by minter_allowances
         minter_list: Vec<Address>,
         // master_minter_list
         // owner_list
@@ -284,26 +286,27 @@ impl Cep18 {
     // Functions that are specific to CCTP start here
 
     /// Pause this contract
-    pub fn pause(&mut self){
+    pub fn pause(&mut self) {
         todo!("Require caller to be Role::Owner");
         self.paused.set(true);
     }
 
     /// Unpause this contract
-    pub fn unpause(&mut self){
+    pub fn unpause(&mut self) {
         todo!("Require caller be Role::Owner");
         self.paused.set(false);
     }
 
     /// Blacklist an account
-    pub fn blacklist(&mut self, account: &Address){
+    pub fn blacklist(&mut self, account: &Address) {
         todo!("Require caller to be Role::Blacklister");
         // add Blacklist Role to account
-        self.security_badges.set(&account, SecurityBadge::Blacklisted);
+        self.security_badges
+            .set(&account, SecurityBadge::Blacklisted);
     }
 
     /// Remove an account from the Blacklist
-    pub fn unblacklist(&mut self, account: &Address){
+    pub fn unblacklist(&mut self, account: &Address) {
         todo!("Require caller to be Role::Blacklister");
         // remove Blacklist Role from account
         self.security_badges.set(&account, SecurityBadge::None);
@@ -325,6 +328,52 @@ impl Cep18 {
             .get(&account)
             .unwrap_or_revert_with(&self.env(), Error::InsufficientRights);
         account_badge.has_blacklisted()
+    }
+
+    /// Update the Blacklister, can only be called by Owner
+    pub fn update_blacklister(&mut self, new_blacklister: &Address) {
+        todo!("Require caller to be Role::Owner");
+        // Remove Blacklister role from current blacklister
+        // Add Blacklister role to new blacklister
+    }
+
+    /// Query the admins of this account
+    pub fn admins(&self) -> Vec<Address> {
+        todo!("Return accounts with Admin role")
+    }
+
+    /// Query the owners of this account
+    pub fn owners(&self) -> Vec<Address> {
+        todo!("Return accounts with Owner role")
+    }
+
+    /// Query the owners of this account
+    pub fn pausers(&self) -> Vec<Address> {
+        todo!("Return accounts with Pauser role")
+    }
+
+    /// Configure a new minter with allowance
+    pub fn configure_minter_allowance(&mut self) {
+        todo!("Require caller to be Role::Admin | Controller");
+        // Add a new minter and store its initial allowance
+    }
+
+    /// Increase allowance for a minter
+    pub fn increase_minter_allowance(&mut self, minter: &Address, new_allowance: U256) {
+        todo!("Require caller to be Role::Admin | Controller");
+        // Increase the allowance for the specified minter
+    }
+
+    /// Decrease allowance for a minter
+    pub fn decrease_minter_allowance(&mut self, minter: &Address, new_allowance: U256) {
+        todo!("Require caller to be Role::Admin | Controller");
+        // Decrease the allowance for the specified minter
+    }
+
+    /// Remove the minter role from an account
+    pub fn remove_minter(&mut self, minter: &Address) {
+        todo!("Require caller to be Role::Admin | Controller");
+        // Remove the Minter Role from the target
     }
 
     // Functions that are specific to CCTP end here

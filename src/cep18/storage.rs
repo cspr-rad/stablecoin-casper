@@ -217,14 +217,20 @@ pub struct Cep18MinterAllowancesStorage;
 impl Cep18MinterAllowancesStorage {
     /// Sets the allowance of the given owner and spender.
     pub fn set(&self, minter: &Address, amount: U256) {
-        self.env()
-            .set_dictionary_value(MINTER_ALLOWANCES_KEY, &minter.to_bytes().unwrap_or_revert(&self.env()), amount);
+        self.env().set_dictionary_value(
+            MINTER_ALLOWANCES_KEY,
+            &minter.to_bytes().unwrap_or_revert(&self.env()),
+            amount,
+        );
     }
 
     /// Gets the allowance of the given owner and spender.
     pub fn get_or_default(&self, minter: &Address) -> U256 {
         self.env()
-            .get_dictionary_value(MINTER_ALLOWANCES_KEY, &minter.to_bytes().unwrap_or_revert(&self.env()))
+            .get_dictionary_value(
+                MINTER_ALLOWANCES_KEY,
+                &minter.to_bytes().unwrap_or_revert(&self.env()),
+            )
             .unwrap_or_default()
     }
 
