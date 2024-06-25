@@ -304,6 +304,45 @@ impl Cep18 {
         // remove Blacklist Role from account
         self.security_badges.set(&account, SecurityBadge::None);
     }
+
+    pub fn is_minter(&self, account: &Address) -> bool {
+        let maybe_batch = self.security_badges.get(account);
+        match maybe_batch {
+            Some(badge) => {
+                match badge {
+                    SecurityBadge::Minter => {
+                        true
+                    },
+                    _ => {
+                        false
+                    }
+                }
+            },
+            None => {
+                false
+            }
+        }
+    }
+
+    pub fn is_blacklisted(&self, account: &Address) -> bool {
+        let maybe_batch = self.security_badges.get(account);
+        match maybe_batch {
+            Some(badge) => {
+                match badge {
+                    SecurityBadge::Blacklisted => {
+                        true
+                    },
+                    _ => {
+                        false
+                    }
+                }
+            },
+            None => {
+                false
+            }
+        }
+    }
+
     // Functions that are specific to CCTP end here
 }
 
