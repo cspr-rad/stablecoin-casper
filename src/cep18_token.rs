@@ -283,28 +283,33 @@ impl Cep18 {
 
     // Functions that are specific to CCTP start here
 
+    /// Pause this contract
     pub fn pause(&mut self){
         todo!("Require caller to be Role::Owner");
         self.paused.set(true);
     }
 
+    /// Unpause this contract
     pub fn unpause(&mut self){
         todo!("Require caller be Role::Owner");
         self.paused.set(false);
     }
 
+    /// Blacklist an account
     pub fn blacklist(&mut self, account: &Address){
         todo!("Require caller to be Role::Blacklister");
         // add Blacklist Role to account
         self.security_badges.set(&account, SecurityBadge::Blacklisted);
     }
 
+    /// Remove an account from the Blacklist
     pub fn unblacklist(&mut self, account: &Address){
         todo!("Require caller to be Role::Blacklister");
         // remove Blacklist Role from account
         self.security_badges.set(&account, SecurityBadge::None);
     }
 
+    /// Will return true if the account is a minter
     pub fn is_minter(&self, account: &Address) -> bool {
         let maybe_batch = self.security_badges.get(account);
         match maybe_batch {
@@ -324,6 +329,7 @@ impl Cep18 {
         }
     }
 
+    /// Will return true if the account is currently blacklisted
     pub fn is_blacklisted(&self, account: &Address) -> bool {
         let maybe_batch = self.security_badges.get(account);
         match maybe_batch {
