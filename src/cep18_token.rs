@@ -263,18 +263,14 @@ impl Cep18 {
     pub fn blacklist(&mut self, account: &Address) {
         self.require_role(&self.caller(), Role::Blacklister);
         self.roles.configure_role(account, Role::Blacklisted);
-        self.env().emit_event(Blacklist {
-            account: *account,
-        });
+        self.env().emit_event(Blacklist { account: *account });
     }
 
     /// Remove an account from the Blacklist
     pub fn unblacklist(&mut self, account: &Address) {
         self.require_role(&self.caller(), Role::Blacklister);
         self.roles.revoke_role(account, Role::Blacklisted);
-        self.env().emit_event(Unblacklist {
-            account: *account,
-        });
+        self.env().emit_event(Unblacklist { account: *account });
     }
 
     /// Update the Blacklister, can only be called by Owner

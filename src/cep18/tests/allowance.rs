@@ -1,11 +1,5 @@
 #[cfg(test)]
 mod allowance_tests {
-    use core::ops::Add;
-
-    use odra::casper_types::U256;
-    use odra::host::{Deployer, HostRef, NoArgs};
-    use odra::Address;
-
     use crate::cep18::cep18_client_contract::Cep18ClientContractHostRef;
     use crate::cep18::errors::Error::InsufficientAllowance;
     use crate::cep18_token::tests::{
@@ -13,6 +7,10 @@ mod allowance_tests {
         TOKEN_DECIMALS, TOKEN_NAME, TOKEN_SYMBOL, TOKEN_TOTAL_SUPPLY, TRANSFER_AMOUNT_1,
     };
     use crate::cep18_token::{Cep18HostRef, Cep18InitArgs};
+    use core::ops::Add;
+    use odra::casper_types::U256;
+    use odra::host::{Deployer, HostRef, NoArgs};
+    use odra::Address;
 
     fn test_approve_for(
         cep18_token: &mut Cep18HostRef,
