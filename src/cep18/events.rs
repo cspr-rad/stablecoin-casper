@@ -83,11 +83,72 @@ pub struct TransferFrom {
     pub amount: U256,
 }
 
-/// An event emitted when a security rules change is performed.
+// Stablecoin Events
+
 #[odra::event]
-pub struct ChangeSecurity {
-    /// The address of the administrator which perfomed the change.
-    pub admin: Address,
-    /// The map of changes made to the security rules.
-    pub sec_change_map: BTreeMap<Address, Role>,
+/// Emitted when account ID is blocklisted.
+pub struct Blacklist {
+    pub account: Address,
+}
+
+#[odra::event]
+/// Emitted when blocklister account ID is changed
+pub struct BlacklisterChanged {
+    pub new_blocklister: Address,
+}
+
+#[odra::event]
+/// Emitted when a controller is configured with a minter.
+pub struct ControllerConfigured {
+    pub controller: Address,
+    pub minter: Address,
+}
+
+#[odra::event]
+/// Emitted when a controller is disabled.
+pub struct ControllerRemoved {
+    pub controller: Address,
+}
+
+#[odra::event]
+/// Emitted when minter account ID is configured.
+pub struct MinterConfigured {
+    pub minter: Address,
+    pub minter_allowance: U256,
+}
+
+#[odra::event]
+/// Emitted when minter account ID is removed.
+pub struct MinterRemoved {
+    pub minter: Address,
+}
+
+#[odra::event]
+/// Emitted when contract is paused.
+pub struct Paused {}
+
+#[odra::event]
+/// Emitted when contract is unpaused.
+pub struct Unpaused {}
+
+#[odra::event]
+/// Emitted when an account is configured as one of the contract's main multi-sig roles, e.g.
+/// Admin, MasterMinter, etc.
+pub struct RoleConfigured {
+    pub role: Role,
+    pub account: Address,
+}
+
+#[odra::event]
+/// Emitted when one of the contract's main multi-sig roles, e.g. Admin, MasterMinter, etc.
+/// is revoked from their role.
+pub struct RoleRevoked {
+    pub role: Role,
+    pub account: Address,
+}
+
+#[odra::event]
+/// Emitted when account ID is unblocklisted.
+pub struct Unblocklist {
+    pub account: Address,
 }

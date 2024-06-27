@@ -8,8 +8,7 @@ use odra::{prelude::*, Addressable};
 use crate::cep18::errors::Error;
 
 use crate::cep18::events::{
-    Burn, ChangeSecurity, DecreaseAllowance, IncreaseAllowance, Mint, SetAllowance, Transfer,
-    TransferFrom,
+    Burn, DecreaseAllowance, IncreaseAllowance, Mint, SetAllowance, Transfer, TransferFrom,
 };
 use crate::cep18::storage::{
     Cep18AllowancesStorage, Cep18BalancesStorage, Cep18DecimalsStorage,
@@ -25,7 +24,7 @@ use crate::cep18::utils::{Cep18Modality, Role};
 */
 
 /// CEP-18 token module
-#[odra::module(events = [Mint, Burn, SetAllowance, IncreaseAllowance, DecreaseAllowance, Transfer, TransferFrom, ChangeSecurity])]
+#[odra::module(events = [Mint, Burn, SetAllowance, IncreaseAllowance, DecreaseAllowance, Transfer, TransferFrom])]
 pub struct Cep18 {
     decimals: SubModule<Cep18DecimalsStorage>,
     symbol: SubModule<Cep18SymbolStorage>,
