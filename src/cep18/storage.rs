@@ -1,5 +1,3 @@
-use core::ops::Add;
-
 use alloc::string::String;
 use odra::casper_types::U256;
 use odra::ExecutionError::AdditionOverflow;

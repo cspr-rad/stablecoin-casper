@@ -5,13 +5,10 @@ mod mint_and_burn_tests {
 
     use odra::casper_types::U256;
     use odra::host::HostRef;
-    use odra::ExecutionError::AdditionOverflow;
 
-    use crate::cep18::errors::Error::{InsufficientBalance, InsufficientRights, MintBurnDisabled};
     use crate::cep18::utils::Cep18Modality;
     use crate::cep18_token::tests::{
-        setup, setup_with_args, TOKEN_DECIMALS, TOKEN_NAME, TOKEN_OWNER_AMOUNT_1,
-        TOKEN_OWNER_AMOUNT_2, TOKEN_SYMBOL, TOKEN_TOTAL_SUPPLY, TRANSFER_AMOUNT_1,
+        setup_with_args, TOKEN_DECIMALS, TOKEN_NAME, TOKEN_SYMBOL, TOKEN_TOTAL_SUPPLY,
     };
     use crate::cep18_token::Cep18InitArgs;
 

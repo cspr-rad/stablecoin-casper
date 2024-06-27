@@ -1,14 +1,12 @@
 //! CEP-18 Casper Fungible Token standard implementation.
-use core::ops::Add;
-
-use odra::casper_types::account;
+use odra::prelude::*;
 use odra::{casper_types::U256, Address, Mapping, SubModule, UnwrapOrRevert, Var};
-use odra::{prelude::*, Addressable};
 
 use crate::cep18::errors::Error;
 
 use crate::cep18::events::{
-    Blacklist, Burn, DecreaseAllowance, IncreaseAllowance, Mint, Paused, SetAllowance, Transfer, TransferFrom, Unblacklist, Unpaused
+    Blacklist, Burn, DecreaseAllowance, IncreaseAllowance, Mint, Paused, SetAllowance, Transfer,
+    TransferFrom, Unblacklist, Unpaused,
 };
 use crate::cep18::storage::{
     Cep18AllowancesStorage, Cep18BalancesStorage, Cep18DecimalsStorage,
@@ -129,7 +127,7 @@ impl Cep18 {
     pub fn approve(&mut self, spender: &Address, amount: &U256) {
         self.require_unpaused();
         self.require_not_role(&self.caller(), Role::Blacklisted);
-        self.require_not_role(&spender, Role::Blacklisted);
+        self.require_not_role(spender, Role::Blacklisted);
         let owner = self.env().caller();
         if owner == *spender {
             self.env().revert(Error::CannotTargetSelfUser);
@@ -264,18 +262,18 @@ impl Cep18 {
     /// Blacklist an account
     pub fn blacklist(&mut self, account: &Address) {
         self.require_role(&self.caller(), Role::Blacklister);
-        self.roles.configure_role(&account, Role::Blacklisted);
-        self.env().emit_event(Blacklist{
-            account: account.clone()
+        self.roles.configure_role(account, Role::Blacklisted);
+        self.env().emit_event(Blacklist {
+            account: *account,
         });
     }
 
     /// Remove an account from the Blacklist
     pub fn unblacklist(&mut self, account: &Address) {
         self.require_role(&self.caller(), Role::Blacklister);
-        self.roles.revoke_role(&account, Role::Blacklisted);
-        self.env().emit_event(Unblacklist{
-            account: account.clone()
+        self.roles.revoke_role(account, Role::Blacklisted);
+        self.env().emit_event(Unblacklist {
+            account: *account,
         });
     }
 
@@ -324,7 +322,7 @@ impl Cep18 {
         self.require_not_role(minter, Role::Blacklisted);
         self.roles.configure_role(controller, Role::Controller);
         self.roles.configure_role(minter, Role::Minter);
-        self.controllers.set(controller, minter.clone());
+        self.controllers.set(controller, *minter);
     }
 
     /// Remove a controller
@@ -501,8 +499,6 @@ pub(crate) mod tests {
     pub const TOKEN_SYMBOL: &str = "USDC";
     pub const TOKEN_DECIMALS: u8 = 100;
     pub const TOKEN_TOTAL_SUPPLY: u64 = 1_000_000_000;
-    pub const TOKEN_OWNER_AMOUNT_1: u64 = 1_000_000;
-    pub const TOKEN_OWNER_AMOUNT_2: u64 = 2_000_000;
     pub const TRANSFER_AMOUNT_1: u64 = 200_001;
     pub const ALLOWANCE_AMOUNT_1: u64 = 456_789;
     pub const ALLOWANCE_AMOUNT_2: u64 = 87_654;

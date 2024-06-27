@@ -1,6 +1,5 @@
 #![doc = "Binary for building schema definitions from odra contracts."]
 #[allow(unused_imports)]
-use usdc_orda;
 
 #[cfg(not(target_arch = "wasm32"))]
 extern "Rust" {
