@@ -49,6 +49,11 @@ mod allowance_tests {
     }
 
     #[test]
+    fn test_install(){
+        let mut cep18_token = setup(true);
+    }
+
+    #[test]
     fn should_approve_funds() {
         // given a token
         let mut cep18_token = setup(false);

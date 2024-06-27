@@ -36,12 +36,20 @@ mod test_illegal_mint {
         cep18_token.env().set_caller(controller_1);
         cep18_token.configure_minter_allowance(U256::from(10));
         cep18_token.env().set_caller(minter_1);
+        // try to mint legally, but exceed the allowance
+        let result: Result<(), odra::OdraError> = cep18_token.try_mint(&user, U256::from(11));
+        match result {
+            Ok(_) => {
+                panic!("Security Incident: Mint that exceeds the Allowance went through!")
+            }
+            _ => {}
+        }
         // try to mint illegally
         cep18_token.env().set_caller(user);
         let result: Result<(), odra::OdraError> = cep18_token.try_mint(&user, U256::from(10));
         match result {
             Ok(_) => {
-                panic!("Illegal mint went through!")
+                panic!("Security Incident: Illegal mint went through!")
             }
             _ => {}
         }
@@ -53,14 +61,9 @@ mod test_illegal_mint {
         let result: Result<(), odra::OdraError> = cep18_token.try_mint(&user, U256::from(10));
         match result {
             Ok(_) => {
-                panic!("Illegal mint went through!")
+                panic!("Security Incident: Illegal mint went through!")
             }
             _ => {}
         }
-    }
-
-    #[test]
-    fn test_stablecoin_burn() {
-        todo!("Check if the allowance is decreased by this??")
     }
 }

@@ -40,6 +40,6 @@ mod mint_and_burn_tests {
 
     #[test]
     fn test_stablecoin_burn() {
-        todo!("Check if the allowance is decreased by this??")
+        //todo
     }
 }

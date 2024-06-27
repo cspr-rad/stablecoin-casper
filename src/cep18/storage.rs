@@ -222,7 +222,7 @@ impl Cep18MinterAllowancesStorage {
     pub fn set(&self, minter: &Address, amount: U256) {
         self.env().set_dictionary_value(
             MINTER_ALLOWANCES_KEY,
-            &minter.to_bytes().unwrap_or_revert(&self.env()),
+            &self.key(minter),
             amount,
         );
     }
@@ -232,7 +232,7 @@ impl Cep18MinterAllowancesStorage {
         self.env()
             .get_dictionary_value(
                 MINTER_ALLOWANCES_KEY,
-                &minter.to_bytes().unwrap_or_revert(&self.env()),
+                &self.key(minter),
             )
             .unwrap_or_default()
     }
@@ -254,6 +254,15 @@ impl Cep18MinterAllowancesStorage {
             .unwrap_or_revert_with(&self.env(), AdditionOverflow);
         self.set(minter, new_allowance);
     }
+
+    fn key(&self, account: &Address) -> [u8; 64] {
+        let mut result = [0u8; 64];
+        let mut preimage = Vec::new();
+        preimage.append(&mut account.to_bytes().unwrap_or_revert(&self.env()));
+        let key_bytes = self.env().hash(&preimage);
+        odra::utils::hex_to_slice(&key_bytes, &mut result);
+        result
+    }
 }
 
 #[odra::module]
@@ -267,7 +276,7 @@ impl StablecoinRoles {
         roles.insert(role as usize, true);
         self.env().set_dictionary_value(
             STABLECOIN_ROLES_KEY,
-            &account.to_bytes().unwrap_or_revert(&self.env()),
+            &self.key(account),
             roles,
         );
     }
@@ -277,7 +286,7 @@ impl StablecoinRoles {
         roles.insert(role as usize, false);
         self.env().set_dictionary_value(
             STABLECOIN_ROLES_KEY,
-            &account.to_bytes().unwrap_or_revert(&self.env()),
+            &self.key(account),
             roles,
         );
     }
@@ -308,7 +317,7 @@ impl StablecoinRoles {
         self.env()
             .get_dictionary_value(
                 STABLECOIN_ROLES_KEY,
-                &account.to_bytes().unwrap_or_revert(&self.env()),
+                &self.key(account),
             )
             .unwrap_or(vec![false; Role::VARIANTS])
     }
@@ -316,5 +325,14 @@ impl StablecoinRoles {
     pub fn has_role(&self, account: &Address, role: Role) -> bool {
         let roles: Vec<bool> = self.get_roles(account);
         roles.get(role as usize).cloned().unwrap_or(false)
+    }
+
+    fn key(&self, account: &Address) -> [u8; 64] {
+        let mut result = [0u8; 64];
+        let mut preimage = Vec::new();
+        preimage.append(&mut account.to_bytes().unwrap_or_revert(&self.env()));
+        let key_bytes = self.env().hash(&preimage);
+        odra::utils::hex_to_slice(&key_bytes, &mut result);
+        result
     }
 }

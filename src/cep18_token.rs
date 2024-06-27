@@ -75,7 +75,7 @@ impl Cep18 {
                 .configure_role(&master_minter, Role::MasterMinter);
         }
 
-        for owner in owner_list {
+       for owner in owner_list {
             self.roles.configure_role(&owner, Role::Owner);
             self.add_maybe_owner(owner);
         }
@@ -318,7 +318,7 @@ impl Cep18 {
         self.require_not_role(minter, Role::Blacklisted);
         self.roles.configure_role(controller, Role::Controller);
         self.roles.configure_role(minter, Role::Minter);
-        self.controllers.set(controller, *minter);
+        self.controllers.set(&controller, *minter);
     }
 
     /// Remove a controller
@@ -402,7 +402,7 @@ impl Cep18 {
     // Get the minter that is associated with the controller
     fn get_associated_minter(&mut self, controller: &Address) -> Address {
         self.controllers
-            .get(controller)
+            .get(&controller)
             .unwrap_or_revert_with(&self.env(), Error::MissingController)
     }
 
@@ -506,6 +506,8 @@ pub(crate) mod tests {
         } else {
             Cep18Modality::None
         };
+        let blacklister = env.get_account(3);
+
         let init_args = Cep18InitArgs {
             symbol: TOKEN_SYMBOL.to_string(),
             name: TOKEN_NAME.to_string(),
@@ -514,7 +516,7 @@ pub(crate) mod tests {
             master_minter_list: vec![],
             owner_list: vec![],
             pauser_list: vec![],
-            blacklister: env.get_account(3),
+            blacklister: blacklister,
             modality: Some(modality),
         };
         setup_with_args(&env, init_args)
