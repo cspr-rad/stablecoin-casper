@@ -425,7 +425,7 @@ impl Cep18 {
 
 impl Cep18 {
     /// Transfers tokens from the sender to the recipient without checking the permissions.
-    pub fn raw_transfer(&mut self, sender: &Address, recipient: &Address, amount: &U256) {
+    fn raw_transfer(&mut self, sender: &Address, recipient: &Address, amount: &U256) {
         self.require_unpaused();
         self.require_not_role(&self.caller(), Role::Blacklisted);
         if *amount > self.balances.get_or_default(sender) {
@@ -445,7 +445,7 @@ impl Cep18 {
     }
 
     /// Mints new tokens and assigns them to the given address without checking the permissions.
-    pub fn raw_mint(&mut self, owner: &Address, amount: &U256) {
+    fn raw_mint(&mut self, owner: &Address, amount: &U256) {
         self.require_unpaused();
         self.require_not_role(&self.caller(), Role::Blacklisted);
         self.total_supply.add(*amount);
@@ -458,7 +458,7 @@ impl Cep18 {
     }
 
     /// Burns the given amount of tokens from the given address without checking the permissions.
-    pub fn raw_burn(&mut self, owner: &Address, amount: &U256) {
+    fn raw_burn(&mut self, owner: &Address, amount: &U256) {
         self.require_unpaused();
         self.require_not_role(&self.caller(), Role::Blacklisted);
         self.total_supply.subtract(*amount);
