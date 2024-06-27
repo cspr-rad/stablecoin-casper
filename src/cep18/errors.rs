@@ -42,10 +42,14 @@ pub enum Error {
     /// The package hash for the upgrade is missing.
     /// This error is not used by Odra implementation yet.
     _MissingPackageHashForUpgrade = 60019,
+    /// There is no Blacklister for the Stablecoin.
     MissingBlacklister = 60020,
-    MissingMinter = 60021,
+    /// There is no such Controller.
     MissingController = 60022,
+    /// The Minter has an insufficent Allowance, 
+    /// the associated Controller may increase it.
     InsufficientMinterAllowance = 60023,
+    /// Contract is currently paused, this functionality therefore is unavailable.
     ContractIsPaused = 60024,
     /// The contract is in an invalid state. This error should never happen.
     InvalidState = 60100,
