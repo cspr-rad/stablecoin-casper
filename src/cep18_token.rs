@@ -235,14 +235,20 @@ impl Cep18 {
     // Functions that are specific to Stablecoin start here
 
     /// Mints new tokens and assigns them to the given address.
-    pub fn mint(&mut self, owner: &Address, amount: &U256) {
+    pub fn mint(&mut self, owner: &Address, amount: U256) {
         self.assert_burn_and_mint_enabled();
-
+        // caller must be minter
         if !self.roles.is_minter(&self.env().caller()) {
             self.env().revert(Error::InsufficientRights);
         };
-
-        self.raw_mint(owner, amount);
+        // minter allowance must be sufficient
+        let minter_allowance: U256 = self.minter_allowances.get_or_default(&self.env().caller());
+        if minter_allowance < amount{
+            self.env().revert(Error::InsufficientMinterAllowance);
+        }
+        // decrease minter allowance
+        self.minter_allowances.subtract(&self.env().caller(), amount);
+        self.raw_mint(owner, &amount);
     }
 
     /// Pause this contract

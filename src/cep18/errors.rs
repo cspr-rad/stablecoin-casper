@@ -45,6 +45,7 @@ pub enum Error {
     MissingBlacklister = 60020,
     MissingMinter = 60021,
     MissingController = 60022,
+    InsufficientMinterAllowance = 60023,
     /// The contract is in an invalid state. This error should never happen.
     InvalidState = 60100,
 }
