@@ -2,18 +2,18 @@
 use odra::prelude::*;
 use odra::{casper_types::U256, Address, Mapping, SubModule, UnwrapOrRevert, Var};
 
-use crate::cep18::errors::Error;
+use crate::stablecoin::errors::Error;
 
-use crate::cep18::events::{
+use crate::stablecoin::events::{
     Blacklist, Burn, DecreaseAllowance, IncreaseAllowance, Mint, Paused, SetAllowance, Transfer,
     TransferFrom, Unblacklist, Unpaused,
 };
-use crate::cep18::storage::{
+use crate::stablecoin::storage::{
     Cep18AllowancesStorage, Cep18BalancesStorage, Cep18DecimalsStorage,
     Cep18MinterAllowancesStorage, Cep18NameStorage, Cep18SymbolStorage, Cep18TotalSupplyStorage,
     StablecoinRoles,
 };
-use crate::cep18::utils::{Cep18Modality, Role};
+use crate::stablecoin::utils::{Cep18Modality, Role};
 
 /// CEP-18 token module
 #[odra::module(events = [Mint, Burn, SetAllowance, IncreaseAllowance, DecreaseAllowance, Transfer, TransferFrom])]
@@ -75,7 +75,7 @@ impl Cep18 {
                 .configure_role(&master_minter, Role::MasterMinter);
         }
 
-       for owner in owner_list {
+        for owner in owner_list {
             self.roles.configure_role(&owner, Role::Owner);
             self.add_maybe_owner(owner);
         }
@@ -483,13 +483,13 @@ pub(crate) mod tests {
     use alloc::string::ToString;
     use alloc::vec;
 
-    use crate::cep18::utils::Cep18Modality;
+    use crate::stablecoin::utils::Cep18Modality;
     use odra::casper_types::account::AccountHash;
     use odra::casper_types::ContractPackageHash;
     use odra::host::{Deployer, HostEnv, HostRef};
     use odra::Address;
 
-    use crate::cep18_token::{Cep18HostRef, Cep18InitArgs};
+    use crate::stablecoin_contract::{Cep18HostRef, Cep18InitArgs};
 
     pub const TOKEN_NAME: &str = "USDCoin";
     pub const TOKEN_SYMBOL: &str = "USDC";
@@ -535,24 +535,24 @@ pub(crate) mod tests {
 
     #[test]
     fn should_have_queryable_properties() {
-        let cep18_token = setup(false);
+        let stablecoin_token = setup(false);
 
-        assert_eq!(cep18_token.name(), TOKEN_NAME);
-        assert_eq!(cep18_token.symbol(), TOKEN_SYMBOL);
-        assert_eq!(cep18_token.decimals(), TOKEN_DECIMALS);
-        assert_eq!(cep18_token.total_supply(), TOKEN_TOTAL_SUPPLY.into());
+        assert_eq!(stablecoin_token.name(), TOKEN_NAME);
+        assert_eq!(stablecoin_token.symbol(), TOKEN_SYMBOL);
+        assert_eq!(stablecoin_token.decimals(), TOKEN_DECIMALS);
+        assert_eq!(stablecoin_token.total_supply(), TOKEN_TOTAL_SUPPLY.into());
 
-        let admin_key = cep18_token.env().caller();
-        let admin_balance = cep18_token.balance_of(&admin_key);
+        let admin_key = stablecoin_token.env().caller();
+        let admin_balance = stablecoin_token.balance_of(&admin_key);
         assert_eq!(admin_balance, TOKEN_TOTAL_SUPPLY.into());
 
-        let contract_balance = cep18_token.balance_of(cep18_token.address());
+        let contract_balance = stablecoin_token.balance_of(stablecoin_token.address());
         assert_eq!(contract_balance, 0.into());
 
         // Ensures that Account and Contract ownership is respected, and we're not keying ownership under
         // the raw bytes regardless of variant.
         let inverted_admin_key = invert_address(admin_key);
-        let inverted_admin_balance = cep18_token.balance_of(&inverted_admin_key);
+        let inverted_admin_balance = stablecoin_token.balance_of(&inverted_admin_key);
         assert_eq!(inverted_admin_balance, 0.into());
     }
 }

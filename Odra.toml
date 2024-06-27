@@ -1,5 +1,5 @@
 [[contracts]]
-fqn = "cep18_token::Cep18"
+fqn = "stablecoin::Cep18"
 
 [[contracts]]
-fqn = "cep18::cep18_client_contract::Cep18ClientContract"
+fqn = "stablecoin::cep18_client_contract::Cep18ClientContract"

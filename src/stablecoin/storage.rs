@@ -6,7 +6,7 @@ use odra::casper_types::bytesrepr::ToBytes;
 use odra::prelude::*;
 use odra::{Address, UnwrapOrRevert};
 
-use crate::cep18::errors::Error::{InvalidState, Overflow};
+use crate::stablecoin::errors::Error::{InvalidState, Overflow};
 
 use base64::prelude::*;
 
@@ -220,20 +220,14 @@ pub struct Cep18MinterAllowancesStorage;
 impl Cep18MinterAllowancesStorage {
     /// Sets the allowance of the given owner and spender.
     pub fn set(&self, minter: &Address, amount: U256) {
-        self.env().set_dictionary_value(
-            MINTER_ALLOWANCES_KEY,
-            &self.key(minter),
-            amount,
-        );
+        self.env()
+            .set_dictionary_value(MINTER_ALLOWANCES_KEY, &self.key(minter), amount);
     }
 
     /// Gets the allowance of the given owner and spender.
     pub fn get_or_default(&self, minter: &Address) -> U256 {
         self.env()
-            .get_dictionary_value(
-                MINTER_ALLOWANCES_KEY,
-                &self.key(minter),
-            )
+            .get_dictionary_value(MINTER_ALLOWANCES_KEY, &self.key(minter))
             .unwrap_or_default()
     }
 
@@ -274,21 +268,15 @@ impl StablecoinRoles {
     pub fn configure_role(&self, account: &Address, role: Role) {
         let mut roles: Vec<bool> = self.get_roles(account);
         roles.insert(role as usize, true);
-        self.env().set_dictionary_value(
-            STABLECOIN_ROLES_KEY,
-            &self.key(account),
-            roles,
-        );
+        self.env()
+            .set_dictionary_value(STABLECOIN_ROLES_KEY, &self.key(account), roles);
     }
 
     pub fn revoke_role(&self, account: &Address, role: Role) {
         let mut roles: Vec<bool> = self.get_roles(account);
         roles.insert(role as usize, false);
-        self.env().set_dictionary_value(
-            STABLECOIN_ROLES_KEY,
-            &self.key(account),
-            roles,
-        );
+        self.env()
+            .set_dictionary_value(STABLECOIN_ROLES_KEY, &self.key(account), roles);
     }
 
     pub fn is_minter(&self, account: &Address) -> bool {
@@ -315,10 +303,7 @@ impl StablecoinRoles {
 
     fn get_roles(&self, account: &Address) -> Vec<bool> {
         self.env()
-            .get_dictionary_value(
-                STABLECOIN_ROLES_KEY,
-                &self.key(account),
-            )
+            .get_dictionary_value(STABLECOIN_ROLES_KEY, &self.key(account))
             .unwrap_or(vec![false; Role::VARIANTS])
     }
 

@@ -1,10 +1,10 @@
 #[cfg(test)]
 mod test_illegal_mint {
-    use crate::cep18::utils::Cep18Modality;
-    use crate::cep18_token::tests::{
+    use crate::stablecoin::utils::Cep18Modality;
+    use crate::stablecoin_contract::tests::{
         setup_with_args, TOKEN_DECIMALS, TOKEN_NAME, TOKEN_SYMBOL, TOKEN_TOTAL_SUPPLY,
     };
-    use crate::cep18_token::Cep18InitArgs;
+    use crate::stablecoin_contract::Cep18InitArgs;
     use alloc::string::ToString;
     use alloc::vec;
     use odra::casper_types::U256;

@@ -1,12 +1,12 @@
 #[cfg(test)]
 mod allowance_tests {
-    use crate::cep18::cep18_client_contract::Cep18ClientContractHostRef;
-    use crate::cep18::errors::Error::InsufficientAllowance;
-    use crate::cep18_token::tests::{
+    use crate::stablecoin::cep18_client_contract::Cep18ClientContractHostRef;
+    use crate::stablecoin::errors::Error::InsufficientAllowance;
+    use crate::stablecoin_contract::tests::{
         invert_address, setup, setup_with_args, ALLOWANCE_AMOUNT_1, ALLOWANCE_AMOUNT_2,
         TOKEN_DECIMALS, TOKEN_NAME, TOKEN_SYMBOL, TOKEN_TOTAL_SUPPLY, TRANSFER_AMOUNT_1,
     };
-    use crate::cep18_token::{Cep18HostRef, Cep18InitArgs};
+    use crate::stablecoin_contract::{Cep18HostRef, Cep18InitArgs};
     use core::ops::Add;
     use odra::casper_types::U256;
     use odra::host::{Deployer, HostRef, NoArgs};
@@ -46,11 +46,6 @@ mod allowance_tests {
             cep18_token.allowance(&inverted_owner, &inverted_spender),
             U256::zero()
         );
-    }
-
-    #[test]
-    fn test_install(){
-        let mut cep18_token = setup(true);
     }
 
     #[test]
@@ -187,7 +182,7 @@ mod allowance_tests {
             owner_list: vec![],
             pauser_list: vec![],
             blacklister: blacklister,
-            modality: Some(crate::cep18::utils::Cep18Modality::MintAndBurn),
+            modality: Some(crate::stablecoin::utils::Cep18Modality::MintAndBurn),
         };
         let mut cep18_token = setup_with_args(&env, args);
         cep18_token.env().set_caller(master_minter);
@@ -212,7 +207,7 @@ mod allowance_tests {
             owner_list: vec![],
             pauser_list: vec![],
             blacklister: blacklister,
-            modality: Some(crate::cep18::utils::Cep18Modality::MintAndBurn),
+            modality: Some(crate::stablecoin::utils::Cep18Modality::MintAndBurn),
         };
         let mut cep18_token = setup_with_args(&env, args);
         cep18_token.env().set_caller(master_minter);

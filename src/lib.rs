@@ -2,5 +2,5 @@
 #![cfg_attr(not(test), no_main)]
 extern crate alloc;
 
-pub mod cep18;
-pub mod cep18_token;
+pub mod stablecoin;
+pub mod stablecoin_contract;

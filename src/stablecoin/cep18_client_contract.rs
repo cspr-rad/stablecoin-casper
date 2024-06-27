@@ -1,4 +1,4 @@
-use crate::cep18_token::Cep18ContractRef;
+use crate::stablecoin_contract::Cep18ContractRef;
 use odra::casper_types::U256;
 use odra::prelude::*;
 use odra::Address;
