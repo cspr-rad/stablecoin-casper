@@ -8,7 +8,7 @@ use odra::{prelude::*, Addressable};
 use crate::cep18::errors::Error;
 
 use crate::cep18::events::{
-    Burn, DecreaseAllowance, IncreaseAllowance, Mint, SetAllowance, Transfer, TransferFrom,
+    Blacklist, Burn, DecreaseAllowance, IncreaseAllowance, Mint, Paused, SetAllowance, Transfer, TransferFrom, Unblacklist, Unpaused
 };
 use crate::cep18::storage::{
     Cep18AllowancesStorage, Cep18BalancesStorage, Cep18DecimalsStorage,
@@ -250,6 +250,7 @@ impl Cep18 {
         self.require_role(&self.caller(), Role::Pauser);
         self.require_not_role(&self.caller(), Role::Blacklisted);
         self.paused.set(true);
+        self.env().emit_event(Paused {});
     }
 
     /// Unpause this contract
@@ -257,18 +258,25 @@ impl Cep18 {
         self.require_role(&self.caller(), Role::Pauser);
         self.require_not_role(&self.caller(), Role::Blacklisted);
         self.paused.set(false);
+        self.env().emit_event(Unpaused {});
     }
 
     /// Blacklist an account
     pub fn blacklist(&mut self, account: &Address) {
         self.require_role(&self.caller(), Role::Blacklister);
-        self.roles.configure_role(&account, Role::Blacklisted)
+        self.roles.configure_role(&account, Role::Blacklisted);
+        self.env().emit_event(Blacklist{
+            account: account.clone()
+        });
     }
 
     /// Remove an account from the Blacklist
     pub fn unblacklist(&mut self, account: &Address) {
         self.require_role(&self.caller(), Role::Blacklister);
-        self.roles.revoke_role(&account, Role::Blacklisted)
+        self.roles.revoke_role(&account, Role::Blacklisted);
+        self.env().emit_event(Unblacklist{
+            account: account.clone()
+        });
     }
 
     /// Update the Blacklister, can only be called by Owner

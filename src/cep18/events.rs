@@ -86,15 +86,15 @@ pub struct TransferFrom {
 // Stablecoin Events
 
 #[odra::event]
-/// Emitted when account ID is blocklisted.
+/// Emitted when account ID is blacklisted.
 pub struct Blacklist {
     pub account: Address,
 }
 
 #[odra::event]
-/// Emitted when blocklister account ID is changed
+/// Emitted when blacklister account ID is changed
 pub struct BlacklisterChanged {
-    pub new_blocklister: Address,
+    pub new_blacklister: Address,
 }
 
 #[odra::event]
@@ -148,7 +148,7 @@ pub struct RoleRevoked {
 }
 
 #[odra::event]
-/// Emitted when account ID is unblocklisted.
-pub struct Unblocklist {
+/// Emitted when account ID is unblacklisted.
+pub struct Unblacklist {
     pub account: Address,
 }
