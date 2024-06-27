@@ -22,6 +22,7 @@ mod mint_and_burn_tests {
         let controller_1 = env.get_account(2);
         let minter_1 = env.get_account(3);
         let blacklister = env.get_account(4);
+        let alice = env.get_account(5);
         let args = Cep18InitArgs {
             symbol: TOKEN_SYMBOL.to_string(),
             name: TOKEN_NAME.to_string(),
@@ -36,5 +37,9 @@ mod mint_and_burn_tests {
         let mut cep18_token = setup_with_args(&env, args);
         cep18_token.env().set_caller(master_minter);
         cep18_token.configure_controller(&controller_1, &minter_1);
+        cep18_token.env().set_caller(controller_1);
+        cep18_token.configure_minter_allowance(U256::from(10));
+        cep18_token.env().set_caller(minter_1);
+        cep18_token.mint(&alice, U256::from(10));
     }
 }
