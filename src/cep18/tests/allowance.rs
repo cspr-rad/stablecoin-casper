@@ -9,9 +9,10 @@ mod allowance_tests {
     use crate::cep18::cep18_client_contract::Cep18ClientContractHostRef;
     use crate::cep18::errors::Error::InsufficientAllowance;
     use crate::cep18_token::tests::{
-        invert_address, setup, ALLOWANCE_AMOUNT_1, ALLOWANCE_AMOUNT_2, TRANSFER_AMOUNT_1,
+        invert_address, setup, setup_with_args, ALLOWANCE_AMOUNT_1, ALLOWANCE_AMOUNT_2,
+        TOKEN_DECIMALS, TOKEN_NAME, TOKEN_SYMBOL, TOKEN_TOTAL_SUPPLY, TRANSFER_AMOUNT_1,
     };
-    use crate::cep18_token::Cep18HostRef;
+    use crate::cep18_token::{Cep18HostRef, Cep18InitArgs};
 
     fn test_approve_for(
         cep18_token: &mut Cep18HostRef,
@@ -165,5 +166,57 @@ mod allowance_tests {
             cep18_token.allowance(&owner, &alice),
             ((ALLOWANCE_AMOUNT_1 * 2) - ALLOWANCE_AMOUNT_2).into()
         );
+    }
+
+    #[test]
+    fn test_increase_minter_allowance() {
+        let env = odra_test::env();
+        let master_minter = env.get_account(1);
+        let controller_1 = env.get_account(2);
+        let minter_1 = env.get_account(3);
+        let blacklister = env.get_account(4);
+        let args = Cep18InitArgs {
+            symbol: TOKEN_SYMBOL.to_string(),
+            name: TOKEN_NAME.to_string(),
+            decimals: TOKEN_DECIMALS,
+            initial_supply: TOKEN_TOTAL_SUPPLY.into(),
+            master_minter_list: vec![master_minter],
+            owner_list: vec![],
+            pauser_list: vec![],
+            blacklister: blacklister,
+            modality: Some(crate::cep18::utils::Cep18Modality::MintAndBurn),
+        };
+        let mut cep18_token = setup_with_args(&env, args);
+        cep18_token.env().set_caller(master_minter);
+        cep18_token.configure_controller(&controller_1, &minter_1);
+        cep18_token.env().set_caller(controller_1);
+        cep18_token.increase_minter_allowance(U256::from(10));
+        assert_eq!(cep18_token.minter_allowance(minter_1), U256::from(10));
+    }
+    #[test]
+    fn test_decrease_minter_allowance() {
+        let env = odra_test::env();
+        let master_minter = env.get_account(1);
+        let controller_1 = env.get_account(2);
+        let minter_1 = env.get_account(3);
+        let blacklister = env.get_account(4);
+        let args = Cep18InitArgs {
+            symbol: TOKEN_SYMBOL.to_string(),
+            name: TOKEN_NAME.to_string(),
+            decimals: TOKEN_DECIMALS,
+            initial_supply: TOKEN_TOTAL_SUPPLY.into(),
+            master_minter_list: vec![master_minter],
+            owner_list: vec![],
+            pauser_list: vec![],
+            blacklister: blacklister,
+            modality: Some(crate::cep18::utils::Cep18Modality::MintAndBurn),
+        };
+        let mut cep18_token = setup_with_args(&env, args);
+        cep18_token.env().set_caller(master_minter);
+        cep18_token.configure_controller(&controller_1, &minter_1);
+        cep18_token.env().set_caller(controller_1);
+        cep18_token.increase_minter_allowance(U256::from(10));
+        cep18_token.decrease_minter_allowance(U256::from(5));
+        assert_eq!(cep18_token.minter_allowance(minter_1), U256::from(5));
     }
 }

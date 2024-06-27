@@ -16,7 +16,7 @@ mod mint_and_burn_tests {
     use crate::cep18_token::Cep18InitArgs;
 
     #[test]
-    fn test_stablecoin_mint(){
+    fn test_stablecoin_mint() {
         let env = odra_test::env();
         let master_minter = env.get_account(1);
         let controller_1 = env.get_account(2);
@@ -41,5 +41,10 @@ mod mint_and_burn_tests {
         cep18_token.configure_minter_allowance(U256::from(10));
         cep18_token.env().set_caller(minter_1);
         cep18_token.mint(&alice, U256::from(10));
+    }
+
+    #[test]
+    fn test_stablecoin_burn() {
+        todo!("Check if the allowance is decreased by this??")
     }
 }

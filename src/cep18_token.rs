@@ -373,10 +373,15 @@ impl Cep18 {
     }
 
     /// Query a minter for a controller
-    pub fn get_minter(&mut self) -> Address{
+    pub fn get_minter(&mut self) -> Address {
         self.require_role(&self.caller(), Role::Controller);
         self.require_not_role(&self.caller(), Role::Blacklisted);
         self.get_associated_minter(&self.caller())
+    }
+
+    /// Query the allowance of a minter
+    pub fn minter_allowance(&self, minter: Address) -> U256 {
+        self.minter_allowances.get_or_default(&minter)
     }
 
     fn require_unpaused(&self) {

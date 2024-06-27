@@ -46,7 +46,7 @@ pub enum Error {
     MissingBlacklister = 60020,
     /// There is no such Controller.
     MissingController = 60022,
-    /// The Minter has an insufficent Allowance, 
+    /// The Minter has an insufficent Allowance,
     /// the associated Controller may increase it.
     InsufficientMinterAllowance = 60023,
     /// Contract is currently paused, this functionality therefore is unavailable.
