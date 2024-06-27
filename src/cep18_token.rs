@@ -17,12 +17,6 @@ use crate::cep18::storage::{
 };
 use crate::cep18::utils::{Cep18Modality, Role};
 
-// Developer notes
-/*
-    The MasterMinter manages Minters
-    The controller controls the allowances for minters
-*/
-
 /// CEP-18 token module
 #[odra::module(events = [Mint, Burn, SetAllowance, IncreaseAllowance, DecreaseAllowance, Transfer, TransferFrom])]
 pub struct Cep18 {
@@ -38,7 +32,9 @@ pub struct Cep18 {
     maybe_owners: Var<Vec<Address>>,
     // Required on Casper to keep track of accounts that have been previously assigned the "pauser" role
     maybe_pausers: Var<Vec<Address>>,
+    // Mapping of Controller:Minter
     controllers: Mapping<Address, Address>,
+    // The Blacklister for this Contract
     blacklister: Var<Address>,
     paused: Var<bool>,
     /// This stores all Stablecoin Roles (MasterMinters, Owners, Pauser, ...)
