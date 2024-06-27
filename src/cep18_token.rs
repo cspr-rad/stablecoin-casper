@@ -1,8 +1,8 @@
 //! CEP-18 Casper Fungible Token standard implementation.
 use core::ops::Add;
 
-use odra::prelude::*;
 use odra::{casper_types::U256, Address, Mapping, SubModule, UnwrapOrRevert, Var};
+use odra::{prelude::*, Addressable};
 
 use crate::cep18::errors::Error;
 
@@ -243,11 +243,12 @@ impl Cep18 {
         };
         // minter allowance must be sufficient
         let minter_allowance: U256 = self.minter_allowances.get_or_default(&self.env().caller());
-        if minter_allowance < amount{
+        if minter_allowance < amount {
             self.env().revert(Error::InsufficientMinterAllowance);
         }
         // decrease minter allowance
-        self.minter_allowances.subtract(&self.env().caller(), amount);
+        self.minter_allowances
+            .subtract(&self.env().caller(), amount);
         self.raw_mint(owner, &amount);
     }
 
@@ -285,16 +286,6 @@ impl Cep18 {
         self.roles.revoke_role(&account, Role::Blacklisted)
     }
 
-    /// Will return true if the account is a minter
-    pub fn is_minter(&self, account: &Address) -> bool {
-        self.roles.is_minter(account)
-    }
-
-    /// Will return true if the account is currently blacklisted
-    pub fn is_blacklisted(&self, account: &Address) -> bool {
-        self.roles.is_blacklisted(account)
-    }
-
     /// Update the Blacklister, can only be called by Owner
     pub fn update_blacklister(&mut self, new_blacklister: &Address) {
         if !self.roles.is_owner(&self.env().caller()) {
@@ -309,6 +300,80 @@ impl Cep18 {
         );
         self.roles
             .configure_role(new_blacklister, Role::Blacklister);
+    }
+
+    /// Configure minter allowance
+    pub fn configure_minter_allowance(&mut self, minter_allowance: U256) {
+        let minter = self.get_associated_minter(&self.env().caller());
+        self.minter_allowances.set(&minter, minter_allowance);
+    }
+
+    /// Increase allowance for a minter
+    pub fn increase_minter_allowance(&mut self, increment: U256) {
+        // caller must be the controller of the minter
+        if !self.roles.is_controller(&self.env().caller())
+            || self.roles.is_blacklisted(&self.env().caller())
+        {
+            self.env().revert(Error::InsufficientRights)
+        }
+        let minter = self.get_associated_minter(&self.env().caller());
+
+        self.minter_allowances.add(&minter, increment);
+    }
+
+    /// Decrease allowance for a minter
+    pub fn decrease_minter_allowance(&mut self, decrement: U256) {
+        // caller must be an active controller
+        if !self.roles.is_controller(&self.env().caller())
+            || self.roles.is_blacklisted(&self.env().caller())
+        {
+            self.env().revert(Error::InsufficientRights)
+        }
+        let minter = self.get_associated_minter(&self.env().caller());
+
+        self.minter_allowances.subtract(&minter, decrement);
+    }
+
+    /// Add a controller, minter pair
+    pub fn configure_controller(&mut self, controller: &Address, minter: &Address) {
+        if !self.roles.is_master_minter(&self.env().caller()) {
+            self.env().revert(Error::InsufficientRights)
+        }
+        self.roles.configure_role(controller, Role::Controller);
+        self.roles.configure_role(minter, Role::Minter);
+        self.controllers.set(controller, minter.clone());
+    }
+
+    /// Remove a controller
+    pub fn remove_controller(&mut self, controller: &Address) {
+        // only the master_minter can call this entry point
+        if !self.roles.is_master_minter(&self.env().caller()) {
+            self.env().revert(Error::InsufficientRights)
+        }
+        self.roles.revoke_role(controller, Role::Controller);
+    }
+
+    /// Remove the minter role from an account
+    pub fn remove_minter(&mut self) {
+        // only an active controller can call this entry point
+        if !self.roles.is_controller(&self.env().caller())
+            || self.roles.is_blacklisted(&self.env().caller())
+        {
+            self.env().revert(Error::InsufficientRights)
+        }
+        let minter: Address = self.get_associated_minter(&self.env().caller());
+        // revoke the minter role
+        self.roles.revoke_role(&minter, Role::Minter);
+    }
+
+    /// Query if an account is a minter
+    pub fn is_minter(&self, account: &Address) -> bool {
+        self.roles.is_minter(account)
+    }
+
+    /// Query if an account is blacklisted
+    pub fn is_blacklisted(&self, account: &Address) -> bool {
+        self.roles.is_blacklisted(account)
     }
 
     /// Query the owners of this account
@@ -333,60 +398,11 @@ impl Cep18 {
         pausers
     }
 
-    /// Configure a new minter with allowance
-    pub fn configure_minter_allowance(&mut self, minter_allowance: U256) {
-        // get the minter that is associated with the controller, will error if the caller is not a controller or does not have a minter
-        let minter: Address = self
-            .controllers
-            .get(&self.env().caller())
-            .unwrap_or_revert_with(&self.env(), Error::MissingController);
-        self.minter_allowances.set(&minter, minter_allowance);
-    }
-
-    /// Increase allowance for a minter
-    pub fn increase_minter_allowance(&mut self, minter: &Address, increment: U256) {
-        // caller must be the controller of the minter
-        if self
-            .controllers
-            .get(minter)
-            .unwrap_or_revert_with(&self.env(), Error::MissingMinter)
-            != self.env().caller()
-        {
-            self.env().revert(Error::InsufficientRights)
-        }
-        self.minter_allowances.add(minter, increment);
-    }
-
-    /// Decrease allowance for a minter
-    pub fn decrease_minter_allowance(&mut self, minter: &Address, decrement: U256) {
-        // caller must be the controller of the minter
-        if self
-            .controllers
-            .get(minter)
-            .unwrap_or_revert_with(&self.env(), Error::MissingMinter)
-            != self.env().caller()
-        {
-            self.env().revert(Error::InsufficientRights)
-        }
-        self.minter_allowances.subtract(minter, decrement);
-    }
-
-    /// Remove the minter role from an account
-    pub fn remove_minter(&mut self, minter: &Address) {
-        if self
-            .controllers
-            .get(minter)
-            .unwrap_or_revert_with(&self.env(), Error::MissingMinter)
-            != self.env().caller()
-        {
-            self.env().revert(Error::InsufficientRights)
-        }
-        // get the minter that is associated with the controller
-        let minter: Address = self
-            .controllers
-            .get(&self.env().caller())
-            .unwrap_or_revert_with(&self.env(), Error::MissingController);
-        self.roles.revoke_role(&minter, Role::Minter);
+    // Get the minter that is associated with the controller
+    fn get_associated_minter(&mut self, controller: &Address) -> Address {
+        self.controllers
+            .get(controller)
+            .unwrap_or_revert_with(&self.env(), Error::MissingController)
     }
 
     fn add_maybe_owner(&mut self, owner: Address) {
