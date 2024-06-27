@@ -42,6 +42,9 @@ pub enum Error {
     /// The package hash for the upgrade is missing.
     /// This error is not used by Odra implementation yet.
     _MissingPackageHashForUpgrade = 60019,
+    MissingBlacklister = 60020,
+    MissingMinter = 60021,
+    MissingController = 60022,
     /// The contract is in an invalid state. This error should never happen.
     InvalidState = 60100,
 }

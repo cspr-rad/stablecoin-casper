@@ -2,7 +2,7 @@ use odra::casper_types::U256;
 use odra::prelude::*;
 use odra::Address;
 
-use crate::cep18::utils::SecurityBadge;
+use crate::cep18::utils::Role;
 
 /// An event emitted when a mint operation is performed.
 #[odra::event]
@@ -89,5 +89,5 @@ pub struct ChangeSecurity {
     /// The address of the administrator which perfomed the change.
     pub admin: Address,
     /// The map of changes made to the security rules.
-    pub sec_change_map: BTreeMap<Address, SecurityBadge>,
+    pub sec_change_map: BTreeMap<Address, Role>,
 }

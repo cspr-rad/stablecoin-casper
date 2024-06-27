@@ -1,41 +1,25 @@
 /// Security badge that can be assigned to an account to grant it certain permissions.
 #[odra::odra_type]
-pub enum SecurityBadge {
-    /// The account is an owner.
-    Admin = 0,
+pub enum Role {
     /// The account is a minter.
-    Minter = 1,
+    Minter = 0,
     /// The account has no special permissions.
-    None = 2,
-    /// CCTP Masterminter.
-    MasterMinter = 3,
-    /// CCTP Blacklister.
-    Blacklister = 4,
-    /// CCTP Blacklisted - held by Addresses that have been Blacklisted.
-    Blacklisted = 5,
-    /// CCTP Pauser.
-    Pauser = 6,
-    /// CCTP Controller.
-    Controller = 7,
-    /// CCTP Owner
-    Owner = 8,
+    None = 1,
+    /// Stablecoin Masterminter.
+    MasterMinter = 2,
+    /// Stablecoin Blacklister.
+    Blacklister = 3,
+    /// Stablecoin Blacklisted - held by Addresses that have been Blacklisted.
+    Blacklisted = 4,
+    /// Stablecoin Pauser.
+    Pauser = 5,
+    /// Stablecoin Controller.
+    Controller = 6,
+    /// Stablecoin Owner
+    Owner = 7,
 }
-
-impl SecurityBadge {
-    /// Returns true if the account has admin permissions.
-    pub fn has_admin(&self) -> bool {
-        matches!(self, SecurityBadge::Admin)
-    }
-
-    /// Returns true if the account has minter or admin permissions.
-    pub fn has_mint(&self) -> bool {
-        matches!(self, SecurityBadge::Minter | SecurityBadge::Admin)
-    }
-
-    /// Returns true if the account is blacklisted
-    pub fn has_blacklisted(&self) -> bool {
-        matches!(self, SecurityBadge::Blacklisted)
-    }
+impl Role {
+    pub const VARIANTS: usize = 8;
 }
 
 /// Modality of the CEP-18 contract.

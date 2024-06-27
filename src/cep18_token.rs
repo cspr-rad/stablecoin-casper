@@ -13,12 +13,18 @@ use crate::cep18::events::{
 use crate::cep18::storage::{
     Cep18AllowancesStorage, Cep18BalancesStorage, Cep18DecimalsStorage,
     Cep18MinterAllowancesStorage, Cep18NameStorage, Cep18SymbolStorage, Cep18TotalSupplyStorage,
+    StablecoinRoles,
 };
-use crate::cep18::utils::{Cep18Modality, SecurityBadge};
+use crate::cep18::utils::{Cep18Modality, Role};
+
+// Developer notes
+/*
+    The MasterMinter manages Minters
+    The controller controls the allowances for minters
+*/
 
 /// CEP-18 token module
-#[odra::module(events = [Mint, Burn, SetAllowance, IncreaseAllowance, DecreaseAllowance, Transfer,
-    TransferFrom, ChangeSecurity])]
+#[odra::module(events = [Mint, Burn, SetAllowance, IncreaseAllowance, DecreaseAllowance, Transfer, TransferFrom, ChangeSecurity])]
 pub struct Cep18 {
     decimals: SubModule<Cep18DecimalsStorage>,
     symbol: SubModule<Cep18SymbolStorage>,
@@ -27,10 +33,16 @@ pub struct Cep18 {
     balances: SubModule<Cep18BalancesStorage>,
     allowances: SubModule<Cep18AllowancesStorage>,
     minter_allowances: SubModule<Cep18MinterAllowancesStorage>,
-    /// This stores all CCTP Roles (MasterMinters, Owners, Pauser, ...)
-    security_badges: Mapping<Address, SecurityBadge>,
-    modality: Var<Cep18Modality>,
+    roles: SubModule<StablecoinRoles>,
+    // Required on Casper to keep track of accounts that have been previously assigned the "owner" role
+    maybe_owners: Var<Vec<Address>>,
+    // Required on Casper to keep track of accounts that have been previously assigned the "pauser" role
+    maybe_pausers: Var<Vec<Address>>,
+    controllers: Mapping<Address, Address>,
+    blacklister: Var<Address>,
     paused: Var<bool>,
+    /// This stores all Stablecoin Roles (MasterMinters, Owners, Pauser, ...)
+    modality: Var<Cep18Modality>,
 }
 
 #[odra::module]
@@ -43,13 +55,11 @@ impl Cep18 {
         name: String,
         decimals: u8,
         initial_supply: U256,
-        admin_list: Vec<Address>,
-        // minter_list will be replaced by minter_allowances
-        minter_list: Vec<Address>,
-        // master_minter_list
-        // owner_list
-        // pausers_list
-        // blacklister (only one)
+        // the master_minter can't mint
+        master_minter_list: Vec<Address>,
+        owner_list: Vec<Address>,
+        pauser_list: Vec<Address>,
+        blacklister: Address,
         modality: Option<Cep18Modality>,
     ) {
         let caller = self.env().caller();
@@ -66,72 +76,27 @@ impl Cep18 {
             amount: initial_supply,
         });
 
-        // set the security badges
-        self.security_badges.set(&caller, SecurityBadge::Admin);
-
-        for owner in admin_list {
-            self.security_badges.set(&owner, SecurityBadge::Admin);
+        for master_minter in master_minter_list {
+            self.roles
+                .configure_role(&master_minter, Role::MasterMinter);
         }
 
-        for minter in minter_list {
-            self.security_badges.set(&minter, SecurityBadge::Minter);
+        for owner in owner_list {
+            self.roles.configure_role(&owner, Role::Owner);
+            self.add_maybe_owner(owner);
         }
+
+        for pauser in pauser_list {
+            self.roles.configure_role(&pauser, Role::Pauser);
+            self.add_maybe_pauser(pauser);
+        }
+
+        self.roles.configure_role(&blacklister, Role::Blacklister);
 
         // set the modality
         if let Some(modality) = modality {
             self.modality.set(modality);
         }
-    }
-
-    /// Owner EntryPoint to manipulate the security access granted to users.
-    /// One user can only possess one access group badge.
-    /// Change strength: None > Owner > Minter
-    /// Change strength meaning by example: If user is added to both Minter and Owner, they will be an
-    /// Owner, also if a user is added to Owner and None then they will be removed from having rights.
-    /// Beware: do not remove the last Owner because that will lock out all owner functionality.
-    pub fn change_security(
-        &mut self,
-        admin_list: Vec<Address>,
-        minter_list: Vec<Address>,
-        none_list: Vec<Address>,
-    ) {
-        self.assert_burn_and_mint_enabled();
-
-        // check if the caller has the owner badge
-        let caller = self.env().caller();
-        let caller_badge = self
-            .security_badges
-            .get(&caller)
-            .unwrap_or_revert_with(&self.env(), Error::InsufficientRights);
-
-        if !caller_badge.has_admin() {
-            self.env().revert(Error::InsufficientRights);
-        }
-
-        let mut badges_map = BTreeMap::new();
-
-        // set the security badges
-        for admin in admin_list {
-            self.security_badges.set(&admin, SecurityBadge::Admin);
-            badges_map.insert(admin, SecurityBadge::Admin);
-        }
-
-        for minter in minter_list {
-            self.security_badges.set(&minter, SecurityBadge::Minter);
-            badges_map.insert(minter, SecurityBadge::Minter);
-        }
-
-        for none in none_list {
-            self.security_badges.set(&none, SecurityBadge::None);
-            badges_map.insert(none, SecurityBadge::None);
-        }
-
-        badges_map.remove(&caller);
-
-        self.env().emit_event(ChangeSecurity {
-            admin: caller,
-            sec_change_map: badges_map,
-        });
     }
 
     /// Returns the name of the token.
@@ -252,22 +217,6 @@ impl Cep18 {
         self.raw_transfer(owner, recipient, amount);
     }
 
-    /// Mints new tokens and assigns them to the given address.
-    pub fn mint(&mut self, owner: &Address, amount: &U256) {
-        self.assert_burn_and_mint_enabled();
-
-        // check if the caller has the minter badge
-        let security_badge = self
-            .security_badges
-            .get(&self.env().caller())
-            .unwrap_or_revert_with(&self.env(), Error::InsufficientRights);
-        if !security_badge.has_mint() {
-            self.env().revert(Error::InsufficientRights);
-        }
-
-        self.raw_mint(owner, amount);
-    }
-
     /// Burns the given amount of tokens from the given address.
     pub fn burn(&mut self, owner: &Address, amount: &U256) {
         self.assert_burn_and_mint_enabled();
@@ -283,100 +232,168 @@ impl Cep18 {
         self.raw_burn(owner, amount);
     }
 
-    // Functions that are specific to CCTP start here
+    // Functions that are specific to Stablecoin start here
+
+    /// Mints new tokens and assigns them to the given address.
+    pub fn mint(&mut self, owner: &Address, amount: &U256) {
+        self.assert_burn_and_mint_enabled();
+
+        if !self.roles.is_minter(&self.env().caller()) {
+            self.env().revert(Error::InsufficientRights);
+        };
+
+        self.raw_mint(owner, amount);
+    }
 
     /// Pause this contract
     pub fn pause(&mut self) {
-        todo!("Require caller to be Role::Owner");
+        if !self.roles.is_pauser(&self.env().caller()) {
+            self.env().revert(Error::InsufficientRights);
+        }
         self.paused.set(true);
     }
 
     /// Unpause this contract
     pub fn unpause(&mut self) {
-        todo!("Require caller be Role::Owner");
+        if !self.roles.is_pauser(&self.env().caller()) {
+            self.env().revert(Error::InsufficientRights)
+        }
         self.paused.set(false);
     }
 
     /// Blacklist an account
     pub fn blacklist(&mut self, account: &Address) {
-        todo!("Require caller to be Role::Blacklister");
-        // add Blacklist Role to account
-        self.security_badges
-            .set(&account, SecurityBadge::Blacklisted);
+        if !self.roles.is_blacklister(&self.env().caller()) {
+            self.env().revert(Error::InsufficientRights)
+        }
+
+        self.roles.configure_role(&account, Role::Blacklisted)
     }
 
     /// Remove an account from the Blacklist
     pub fn unblacklist(&mut self, account: &Address) {
-        todo!("Require caller to be Role::Blacklister");
-        // remove Blacklist Role from account
-        self.security_badges.set(&account, SecurityBadge::None);
+        if !self.roles.is_blacklister(&self.env().caller()) {
+            self.env().revert(Error::InsufficientRights)
+        }
+
+        self.roles.revoke_role(&account, Role::Blacklisted)
     }
 
     /// Will return true if the account is a minter
     pub fn is_minter(&self, account: &Address) -> bool {
-        let account_badge = self
-            .security_badges
-            .get(&account)
-            .unwrap_or_revert_with(&self.env(), Error::InsufficientRights);
-        account_badge.has_mint()
+        self.roles.is_minter(account)
     }
 
     /// Will return true if the account is currently blacklisted
     pub fn is_blacklisted(&self, account: &Address) -> bool {
-        let account_badge = self
-            .security_badges
-            .get(&account)
-            .unwrap_or_revert_with(&self.env(), Error::InsufficientRights);
-        account_badge.has_blacklisted()
+        self.roles.is_blacklisted(account)
     }
 
     /// Update the Blacklister, can only be called by Owner
     pub fn update_blacklister(&mut self, new_blacklister: &Address) {
-        todo!("Require caller to be Role::Owner");
-        // Remove Blacklister role from current blacklister
-        // Add Blacklister role to new blacklister
-    }
-
-    /// Query the admins of this account
-    pub fn admins(&self) -> Vec<Address> {
-        todo!("Return accounts with Admin role")
+        if !self.roles.is_owner(&self.env().caller()) {
+            self.env().revert(Error::InsufficientRights)
+        }
+        self.roles.revoke_role(
+            &self
+                .blacklister
+                .get()
+                .unwrap_or_revert_with(&self.env(), Error::MissingBlacklister),
+            Role::Blacklister,
+        );
+        self.roles
+            .configure_role(new_blacklister, Role::Blacklister);
     }
 
     /// Query the owners of this account
     pub fn owners(&self) -> Vec<Address> {
-        todo!("Return accounts with Owner role")
+        let mut owners: Vec<Address> = Vec::new();
+        for maybe_owner in self.maybe_owners.get().unwrap_or_default() {
+            if self.roles.is_owner(&maybe_owner) {
+                owners.push(maybe_owner)
+            }
+        }
+        owners
     }
 
     /// Query the owners of this account
     pub fn pausers(&self) -> Vec<Address> {
-        todo!("Return accounts with Pauser role")
+        let mut pausers: Vec<Address> = Vec::new();
+        for maybe_pauser in self.maybe_pausers.get().unwrap_or_default() {
+            if self.roles.is_pauser(&maybe_pauser) {
+                pausers.push(maybe_pauser);
+            }
+        }
+        pausers
     }
 
     /// Configure a new minter with allowance
-    pub fn configure_minter_allowance(&mut self) {
-        todo!("Require caller to be Role::Admin | Controller");
-        // Add a new minter and store its initial allowance
+    pub fn configure_minter_allowance(&mut self, minter_allowance: U256) {
+        // get the minter that is associated with the controller, will error if the caller is not a controller or does not have a minter
+        let minter: Address = self
+            .controllers
+            .get(&self.env().caller())
+            .unwrap_or_revert_with(&self.env(), Error::MissingController);
+        self.minter_allowances.set(&minter, minter_allowance);
     }
 
     /// Increase allowance for a minter
-    pub fn increase_minter_allowance(&mut self, minter: &Address, new_allowance: U256) {
-        todo!("Require caller to be Role::Admin | Controller");
-        // Increase the allowance for the specified minter
+    pub fn increase_minter_allowance(&mut self, minter: &Address, increment: U256) {
+        // caller must be the controller of the minter
+        if self
+            .controllers
+            .get(minter)
+            .unwrap_or_revert_with(&self.env(), Error::MissingMinter)
+            != self.env().caller()
+        {
+            self.env().revert(Error::InsufficientRights)
+        }
+        self.minter_allowances.add(minter, increment);
     }
 
     /// Decrease allowance for a minter
-    pub fn decrease_minter_allowance(&mut self, minter: &Address, new_allowance: U256) {
-        todo!("Require caller to be Role::Admin | Controller");
-        // Decrease the allowance for the specified minter
+    pub fn decrease_minter_allowance(&mut self, minter: &Address, decrement: U256) {
+        // caller must be the controller of the minter
+        if self
+            .controllers
+            .get(minter)
+            .unwrap_or_revert_with(&self.env(), Error::MissingMinter)
+            != self.env().caller()
+        {
+            self.env().revert(Error::InsufficientRights)
+        }
+        self.minter_allowances.subtract(minter, decrement);
     }
 
     /// Remove the minter role from an account
     pub fn remove_minter(&mut self, minter: &Address) {
-        todo!("Require caller to be Role::Admin | Controller");
-        // Remove the Minter Role from the target
+        if self
+            .controllers
+            .get(minter)
+            .unwrap_or_revert_with(&self.env(), Error::MissingMinter)
+            != self.env().caller()
+        {
+            self.env().revert(Error::InsufficientRights)
+        }
+        // get the minter that is associated with the controller
+        let minter: Address = self
+            .controllers
+            .get(&self.env().caller())
+            .unwrap_or_revert_with(&self.env(), Error::MissingController);
+        self.roles.revoke_role(&minter, Role::Minter);
     }
 
-    // Functions that are specific to CCTP end here
+    fn add_maybe_owner(&mut self, owner: Address) {
+        let mut maybe_owners: Vec<Address> = self.maybe_owners.get().unwrap_or_default();
+        maybe_owners.push(owner);
+        self.maybe_owners.set(maybe_owners);
+    }
+
+    fn add_maybe_pauser(&mut self, pauser: Address) {
+        let mut maybe_pausers: Vec<Address> = self.maybe_pausers.get().unwrap_or_default();
+        maybe_pausers.push(pauser);
+        self.maybe_pausers.set(maybe_pausers);
+    }
 }
 
 impl Cep18 {
@@ -420,37 +437,6 @@ impl Cep18 {
         });
     }
 
-    /// Changes the security access granted to users without checking the permissions.
-    pub fn raw_change_security(
-        &mut self,
-        admin_list: Vec<Address>,
-        minter_list: Vec<Address>,
-        none_list: Vec<Address>,
-    ) {
-        let mut badges_map = BTreeMap::new();
-
-        // set the security badges
-        for admin in admin_list {
-            self.security_badges.set(&admin, SecurityBadge::Admin);
-            badges_map.insert(admin, SecurityBadge::Admin);
-        }
-
-        for minter in minter_list {
-            self.security_badges.set(&minter, SecurityBadge::Minter);
-            badges_map.insert(minter, SecurityBadge::Minter);
-        }
-
-        for none in none_list {
-            self.security_badges.set(&none, SecurityBadge::None);
-            badges_map.insert(none, SecurityBadge::None);
-        }
-
-        self.env().emit_event(ChangeSecurity {
-            admin: self.env().caller(),
-            sec_change_map: badges_map,
-        });
-    }
-
     fn assert_burn_and_mint_enabled(&mut self) {
         // check if mint_burn is enabled
         if !self.modality.get_or_default().mint_and_burn_enabled() {
@@ -472,8 +458,8 @@ pub(crate) mod tests {
 
     use crate::cep18_token::{Cep18HostRef, Cep18InitArgs};
 
-    pub const TOKEN_NAME: &str = "Plascoin";
-    pub const TOKEN_SYMBOL: &str = "PLS";
+    pub const TOKEN_NAME: &str = "USDCoin";
+    pub const TOKEN_SYMBOL: &str = "USDC";
     pub const TOKEN_DECIMALS: u8 = 100;
     pub const TOKEN_TOTAL_SUPPLY: u64 = 1_000_000_000;
     pub const TOKEN_OWNER_AMOUNT_1: u64 = 1_000_000;
@@ -494,8 +480,10 @@ pub(crate) mod tests {
             name: TOKEN_NAME.to_string(),
             decimals: TOKEN_DECIMALS,
             initial_supply: TOKEN_TOTAL_SUPPLY.into(),
-            admin_list: vec![],
-            minter_list: vec![],
+            master_minter_list: vec![],
+            owner_list: vec![],
+            pauser_list: vec![],
+            blacklister: env.get_account(3),
             modality: Some(modality),
         };
         setup_with_args(&env, init_args)
