@@ -189,7 +189,7 @@ mod allowance_tests {
         cep18_token.configure_controller(&controller_1, &minter_1);
         cep18_token.env().set_caller(controller_1);
         cep18_token.increase_minter_allowance(U256::from(10));
-        assert_eq!(cep18_token.minter_allowance(minter_1), U256::from(10));
+        assert_eq!(cep18_token.minter_allowance(&minter_1), U256::from(10));
     }
     #[test]
     fn test_decrease_minter_allowance() {
@@ -215,6 +215,6 @@ mod allowance_tests {
         cep18_token.env().set_caller(controller_1);
         cep18_token.increase_minter_allowance(U256::from(10));
         cep18_token.decrease_minter_allowance(U256::from(5));
-        assert_eq!(cep18_token.minter_allowance(minter_1), U256::from(5));
+        assert_eq!(cep18_token.minter_allowance(&minter_1), U256::from(5));
     }
 }

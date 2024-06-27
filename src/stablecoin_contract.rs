@@ -5,8 +5,8 @@ use odra::{casper_types::U256, Address, Mapping, SubModule, UnwrapOrRevert, Var}
 use crate::stablecoin::errors::Error;
 
 use crate::stablecoin::events::{
-    Blacklist, Burn, DecreaseAllowance, IncreaseAllowance, Mint, Paused, SetAllowance, Transfer,
-    TransferFrom, Unblacklist, Unpaused,
+    Blacklist, BlacklisterChanged, Burn, DecreaseAllowance, IncreaseAllowance, Mint, Paused,
+    SetAllowance, Transfer, TransferFrom, Unblacklist, Unpaused,
 };
 use crate::stablecoin::storage::{
     Cep18AllowancesStorage, Cep18BalancesStorage, Cep18DecimalsStorage,
@@ -26,11 +26,6 @@ pub struct Cep18 {
     allowances: SubModule<Cep18AllowancesStorage>,
     minter_allowances: SubModule<Cep18MinterAllowancesStorage>,
     roles: SubModule<StablecoinRoles>,
-    // Required on Casper to keep track of accounts that have been previously assigned the "owner" role
-    maybe_owners: Var<Vec<Address>>,
-    // Required on Casper to keep track of accounts that have been previously assigned the "pauser" role
-    maybe_pausers: Var<Vec<Address>>,
-    // Mapping of Controller:Minter
     controllers: Mapping<Address, Address>,
     // The Blacklister for this Contract
     blacklister: Var<Address>,
@@ -77,12 +72,10 @@ impl Cep18 {
 
         for owner in owner_list {
             self.roles.configure_role(&owner, Role::Owner);
-            self.add_maybe_owner(owner);
         }
 
         for pauser in pauser_list {
             self.roles.configure_role(&pauser, Role::Pauser);
-            self.add_maybe_pauser(pauser);
         }
 
         self.roles.configure_role(&blacklister, Role::Blacklister);
@@ -285,6 +278,9 @@ impl Cep18 {
         );
         self.roles
             .configure_role(new_blacklister, Role::Blacklister);
+        self.env().emit_event(BlacklisterChanged {
+            new_blacklister: *new_blacklister,
+        });
     }
 
     /// Configure minter allowance
@@ -348,25 +344,13 @@ impl Cep18 {
     }
 
     /// Query the owners of this account
-    pub fn owners(&self) -> Vec<Address> {
-        let mut owners: Vec<Address> = Vec::new();
-        for maybe_owner in self.maybe_owners.get().unwrap_or_default() {
-            if self.roles.is_owner(&maybe_owner) {
-                owners.push(maybe_owner)
-            }
-        }
-        owners
+    pub fn is_owner(&self, account: &Address) -> bool {
+        self.roles.is_owner(account)
     }
 
     /// Query the owners of this account
-    pub fn pausers(&self) -> Vec<Address> {
-        let mut pausers: Vec<Address> = Vec::new();
-        for maybe_pauser in self.maybe_pausers.get().unwrap_or_default() {
-            if self.roles.is_pauser(&maybe_pauser) {
-                pausers.push(maybe_pauser);
-            }
-        }
-        pausers
+    pub fn is_pausers(&self, account: &Address) -> bool {
+        self.roles.is_pauser(account)
     }
 
     /// Query a minter for a controller
@@ -377,8 +361,8 @@ impl Cep18 {
     }
 
     /// Query the allowance of a minter
-    pub fn minter_allowance(&self, minter: Address) -> U256 {
-        self.minter_allowances.get_or_default(&minter)
+    pub fn minter_allowance(&self, minter: &Address) -> U256 {
+        self.minter_allowances.get_or_default(minter)
     }
 
     fn require_unpaused(&self) {
@@ -404,18 +388,6 @@ impl Cep18 {
         self.controllers
             .get(&controller)
             .unwrap_or_revert_with(&self.env(), Error::MissingController)
-    }
-
-    fn add_maybe_owner(&mut self, owner: Address) {
-        let mut maybe_owners: Vec<Address> = self.maybe_owners.get().unwrap_or_default();
-        maybe_owners.push(owner);
-        self.maybe_owners.set(maybe_owners);
-    }
-
-    fn add_maybe_pauser(&mut self, pauser: Address) {
-        let mut maybe_pausers: Vec<Address> = self.maybe_pausers.get().unwrap_or_default();
-        maybe_pausers.push(pauser);
-        self.maybe_pausers.set(maybe_pausers);
     }
 
     fn caller(&self) -> Address {

@@ -8,11 +8,11 @@ mod mint_and_burn_tests {
     use alloc::string::ToString;
     use alloc::vec;
     use odra::casper_types::U256;
-    use odra::host::HostRef;
+    use odra::host::{HostEnv, HostRef};
 
     #[test]
     fn test_stablecoin_mint() {
-        let env = odra_test::env();
+        let env: HostEnv = odra_test::env();
         let master_minter = env.get_account(1);
         let controller_1 = env.get_account(2);
         let minter_1 = env.get_account(3);
@@ -36,6 +36,8 @@ mod mint_and_burn_tests {
         cep18_token.configure_minter_allowance(U256::from(10));
         cep18_token.env().set_caller(minter_1);
         cep18_token.mint(&alice, U256::from(10));
+        assert_eq!(cep18_token.minter_allowance(&minter_1), U256::from(0));
+        assert!(env.emitted(&cep18_token, "Mint"), "Mint event not emitted")
     }
 
     #[test]
