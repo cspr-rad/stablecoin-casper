@@ -46,6 +46,7 @@ pub enum Error {
     MissingMinter = 60021,
     MissingController = 60022,
     InsufficientMinterAllowance = 60023,
+    ContractIsPaused = 60024,
     /// The contract is in an invalid state. This error should never happen.
     InvalidState = 60100,
 }

@@ -315,7 +315,7 @@ impl StablecoinRoles {
             .unwrap_or(vec![false; Role::VARIANTS])
     }
 
-    fn has_role(&self, account: &Address, role: Role) -> bool {
+    pub fn has_role(&self, account: &Address, role: Role) -> bool {
         let roles: Vec<bool> = self.get_roles(account);
         roles.get(role as usize).cloned().unwrap_or(false)
     }
