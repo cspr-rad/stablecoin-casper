@@ -1,5 +1,3 @@
-//! # CEP-18 Token implemented in Odra.
-mod cep18_client_contract;
 /// Cep18 module errors.
 pub mod errors;
 /// Cep18 module events.
