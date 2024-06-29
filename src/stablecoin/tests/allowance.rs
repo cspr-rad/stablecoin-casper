@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod allowance_tests {
-    use crate::stablecoin::tests::client_contract_test::Cep18ClientContractHostRef;
     use crate::stablecoin::errors::Error::InsufficientAllowance;
+    use crate::stablecoin::tests::client_contract_test::Cep18ClientContractHostRef;
     use crate::stablecoin_contract::tests::{
         invert_address, setup, setup_with_args, ALLOWANCE_AMOUNT_1, ALLOWANCE_AMOUNT_2,
         TOKEN_DECIMALS, TOKEN_NAME, TOKEN_SYMBOL, TOKEN_TOTAL_SUPPLY, TRANSFER_AMOUNT_1,

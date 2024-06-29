@@ -271,9 +271,9 @@ impl StablecoinRoles {
         roles.insert(role.clone() as usize, true);
         self.env()
             .set_dictionary_value(STABLECOIN_ROLES_KEY, &self.key(account), roles);
-        self.env().emit_event(RoleConfigured{
+        self.env().emit_event(RoleConfigured {
             role,
-            account: *account
+            account: *account,
         });
     }
 
@@ -282,9 +282,9 @@ impl StablecoinRoles {
         roles.insert(role.clone() as usize, false);
         self.env()
             .set_dictionary_value(STABLECOIN_ROLES_KEY, &self.key(account), roles);
-        self.env().emit_event(RoleRevoked{
+        self.env().emit_event(RoleRevoked {
             role,
-            account: *account
+            account: *account,
         });
     }
 

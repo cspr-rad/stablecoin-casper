@@ -5,7 +5,9 @@ use odra::{casper_types::U256, Address, Mapping, SubModule, UnwrapOrRevert, Var}
 use crate::stablecoin::errors::Error;
 
 use crate::stablecoin::events::{
-    Blacklist, BlacklisterChanged, Burn, ControllerConfigured, ControllerRemoved, DecreaseAllowance, IncreaseAllowance, Mint, MinterConfigured, MinterRemoved, Paused, SetAllowance, Transfer, TransferFrom, Unblacklist, Unpaused
+    Blacklist, BlacklisterChanged, Burn, ControllerConfigured, ControllerRemoved,
+    DecreaseAllowance, IncreaseAllowance, Mint, MinterConfigured, MinterRemoved, Paused,
+    SetAllowance, Transfer, TransferFrom, Unblacklist, Unpaused,
 };
 use crate::stablecoin::storage::{
     Cep18AllowancesStorage, Cep18BalancesStorage, Cep18DecimalsStorage,
@@ -280,8 +282,8 @@ impl Cep18 {
         self.env().emit_event(BlacklisterChanged {
             new_blacklister: *new_blacklister,
         });
-        self.env().emit_event(BlacklisterChanged{
-            new_blacklister: *new_blacklister
+        self.env().emit_event(BlacklisterChanged {
+            new_blacklister: *new_blacklister,
         });
     }
 
@@ -291,9 +293,9 @@ impl Cep18 {
         let minter = self.get_associated_minter(&self.caller());
         self.require_not_role(&minter, Role::Blacklisted);
         self.minter_allowances.set(&minter, minter_allowance);
-        self.env().emit_event(MinterConfigured{
+        self.env().emit_event(MinterConfigured {
             minter,
-            minter_allowance
+            minter_allowance,
         });
     }
 
@@ -303,9 +305,9 @@ impl Cep18 {
         let minter = self.get_associated_minter(&self.caller());
         self.require_not_role(&minter, Role::Blacklisted);
         self.minter_allowances.add(&minter, increment);
-        self.env().emit_event(MinterConfigured{
+        self.env().emit_event(MinterConfigured {
             minter,
-            minter_allowance: self.minter_allowance(&minter)
+            minter_allowance: self.minter_allowance(&minter),
         });
     }
 
@@ -315,9 +317,9 @@ impl Cep18 {
         let minter = self.get_associated_minter(&self.caller());
         self.require_not_role(&minter, Role::Blacklisted);
         self.minter_allowances.subtract(&minter, decrement);
-        self.env().emit_event(MinterConfigured{
+        self.env().emit_event(MinterConfigured {
             minter,
-            minter_allowance: self.minter_allowance(&minter)
+            minter_allowance: self.minter_allowance(&minter),
         });
     }
 
@@ -329,9 +331,9 @@ impl Cep18 {
         self.roles.configure_role(controller, Role::Controller);
         self.roles.configure_role(minter, Role::Minter);
         self.controllers.set(&controller, *minter);
-        self.env().emit_event(ControllerConfigured{
+        self.env().emit_event(ControllerConfigured {
             controller: *controller,
-            minter: *minter
+            minter: *minter,
         });
     }
 
@@ -339,8 +341,8 @@ impl Cep18 {
     pub fn remove_controller(&mut self, controller: &Address) {
         self.require_role(&self.caller(), Role::MasterMinter);
         self.roles.revoke_role(controller, Role::Controller);
-        self.env().emit_event(ControllerRemoved{
-            controller: *controller
+        self.env().emit_event(ControllerRemoved {
+            controller: *controller,
         });
     }
 
@@ -350,9 +352,7 @@ impl Cep18 {
         self.require_not_role(&self.caller(), Role::Blacklisted);
         let minter: Address = self.get_associated_minter(&self.env().caller());
         self.roles.revoke_role(&minter, Role::Minter);
-        self.env().emit_event(MinterRemoved{
-            minter
-        })
+        self.env().emit_event(MinterRemoved { minter })
     }
 
     // Queries start here

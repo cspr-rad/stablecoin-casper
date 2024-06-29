@@ -11,7 +11,16 @@ mod mint_and_burn_tests {
     use odra::host::{HostEnv, HostRef};
     use odra::Address;
 
-    fn setup() -> (HostEnv, Address, Address, Address, Address, Address, Address, Cep18HostRef){
+    fn setup() -> (
+        HostEnv,
+        Address,
+        Address,
+        Address,
+        Address,
+        Address,
+        Address,
+        Cep18HostRef,
+    ) {
         let env = odra_test::env();
         let master_minter = env.get_account(1);
         let controller_1 = env.get_account(2);
@@ -30,13 +39,22 @@ mod mint_and_burn_tests {
             blacklister: blacklister,
             modality: Some(Cep18Modality::MintAndBurn),
         };
-        let mut cep18_token = setup_with_args(&env, args);
-        (env, master_minter, controller_1, minter_1, blacklister, pauser, user, cep18_token)
+        let cep18_token = setup_with_args(&env, args);
+        (
+            env,
+            master_minter,
+            controller_1,
+            minter_1,
+            blacklister,
+            pauser,
+            user,
+            cep18_token,
+        )
     }
 
     #[test]
     fn test_stablecoin_mint() {
-        let (env, master_minter, controller_1, minter_1, blacklister, pauser, user, mut cep18_token) = setup();
+        let (env, master_minter, controller_1, minter_1, .., user, mut cep18_token) = setup();
         cep18_token.env().set_caller(master_minter);
         cep18_token.configure_controller(&controller_1, &minter_1);
         cep18_token.env().set_caller(controller_1);

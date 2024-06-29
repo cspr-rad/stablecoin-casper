@@ -11,7 +11,16 @@ mod test_permissions {
     use odra::host::{HostEnv, HostRef};
     use odra::Address;
 
-    fn setup() -> (HostEnv, Address, Address, Address, Address, Address, Address, Cep18HostRef){
+    fn setup() -> (
+        HostEnv,
+        Address,
+        Address,
+        Address,
+        Address,
+        Address,
+        Address,
+        Cep18HostRef,
+    ) {
         let env = odra_test::env();
         let master_minter = env.get_account(1);
         let controller_1 = env.get_account(2);
@@ -30,19 +39,34 @@ mod test_permissions {
             blacklister: blacklister,
             modality: Some(Cep18Modality::MintAndBurn),
         };
-        let mut cep18_token = setup_with_args(&env, args);
-        (env, master_minter, controller_1, minter_1, blacklister, pauser, user, cep18_token)
+        let cep18_token = setup_with_args(&env, args);
+        (
+            env,
+            master_minter,
+            controller_1,
+            minter_1,
+            blacklister,
+            pauser,
+            user,
+            cep18_token,
+        )
     }
 
     #[test]
     fn test_minter_permissions() {
-        let (env, master_minter, controller_1, minter_1, blacklister, pauser, user, mut cep18_token) = setup();
+        let (env, master_minter, controller_1, minter_1, .., user, mut cep18_token) = setup();
         cep18_token.env().set_caller(master_minter);
         cep18_token.configure_controller(&controller_1, &minter_1);
-        assert!(env.emitted(&cep18_token, "ControllerConfigured"), "ControllerConfigured event not emitted");
+        assert!(
+            env.emitted(&cep18_token, "ControllerConfigured"),
+            "ControllerConfigured event not emitted"
+        );
         cep18_token.env().set_caller(controller_1);
         cep18_token.configure_minter_allowance(U256::from(10));
-        assert!(env.emitted(&cep18_token, "MinterConfigured"), "MinterConfigured event not emitted");
+        assert!(
+            env.emitted(&cep18_token, "MinterConfigured"),
+            "MinterConfigured event not emitted"
+        );
         cep18_token.env().set_caller(minter_1);
         // try to mint legally, but exceed the allowance
         let result: Result<(), odra::OdraError> = cep18_token.try_mint(&user, U256::from(11));
@@ -74,17 +98,23 @@ mod test_permissions {
             _ => {}
         }
     }
-    
+
     #[test]
-    fn test_revoke_minter_and_controller(){
-        let (env, master_minter, controller_1, minter_1, blacklister, pauser, user, mut cep18_token) = setup();
+    fn test_revoke_minter_and_controller() {
+        let (env, master_minter, controller_1, minter_1, .., mut cep18_token) = setup();
         cep18_token.env().set_caller(master_minter);
         cep18_token.configure_controller(&controller_1, &minter_1);
         cep18_token.env().set_caller(controller_1);
         cep18_token.remove_minter();
-        assert!(env.emitted(&cep18_token, "MinterRemoved"), "MinterRemoved event not emitted");
+        assert!(
+            env.emitted(&cep18_token, "MinterRemoved"),
+            "MinterRemoved event not emitted"
+        );
         cep18_token.env().set_caller(master_minter);
         cep18_token.remove_controller(&controller_1);
-        assert!(env.emitted(&cep18_token, "ControllerRemoved"), "ControllerRemoved event not emitted");
+        assert!(
+            env.emitted(&cep18_token, "ControllerRemoved"),
+            "ControllerRemoved event not emitted"
+        );
     }
 }
