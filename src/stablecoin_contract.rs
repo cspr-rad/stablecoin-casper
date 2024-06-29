@@ -9,13 +9,13 @@ use crate::stablecoin::events::{
     DecreaseAllowance, IncreaseAllowance, Mint, MinterConfigured, MinterRemoved, Paused,
     SetAllowance, Transfer, TransferFrom, Unblacklist, Unpaused,
 };
+use crate::stablecoin::storage::Roles::{self, Role};
 use crate::stablecoin::storage::{
     Cep18AllowancesStorage, Cep18BalancesStorage, Cep18DecimalsStorage,
     Cep18MinterAllowancesStorage, Cep18NameStorage, Cep18SymbolStorage, Cep18TotalSupplyStorage,
     StablecoinRoles,
 };
 use crate::stablecoin::utils::Cep18Modality;
-use crate::stablecoin::storage::Roles::{Role, self};
 
 /// CEP-18 token module
 #[odra::module(events = [Mint, Burn, SetAllowance, IncreaseAllowance, DecreaseAllowance, Transfer, TransferFrom])]
@@ -274,10 +274,10 @@ impl Cep18 {
         self.roles.revoke_role(
             &Roles::Blacklister,
             &self
-            .blacklister
-            .get()
-            // borrow checker is unhappy if we unwrap_or_revert() here.
-            .unwrap()
+                .blacklister
+                .get()
+                // borrow checker is unhappy if we unwrap_or_revert() here.
+                .unwrap(),
         );
         self.roles
             .configure_role(&Roles::Blacklister, new_blacklister);

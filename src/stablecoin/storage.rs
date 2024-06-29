@@ -13,7 +13,6 @@ use base64::prelude::*;
 use super::events::{RoleConfigured, RoleRevoked};
 const ALLOWANCES_KEY: &str = "allowances";
 const MINTER_ALLOWANCES_KEY: &str = "minter_allowances";
-const STABLECOIN_ROLES_KEY: &str = "stablecoin_roles";
 const BALANCES_KEY: &str = "balances";
 const NAME_KEY: &str = "name";
 const DECIMALS_KEY: &str = "decimals";
@@ -259,29 +258,28 @@ impl Cep18MinterAllowancesStorage {
 }
 
 #[allow(non_snake_case)]
-pub mod Roles{
-    pub type Role = [u8;32];
+pub mod Roles {
+    pub type Role = [u8; 32];
     #[allow(non_upper_case_globals)]
     pub const Minter: Role = [0u8; 32];
     #[allow(non_upper_case_globals)]
-    pub const MasterMinter: Role = [1u8;32];
+    pub const MasterMinter: Role = [1u8; 32];
     #[allow(non_upper_case_globals)]
-    pub const Blacklister: Role = [2u8;32];
+    pub const Blacklister: Role = [2u8; 32];
     #[allow(non_upper_case_globals)]
-    pub const Blacklisted: Role = [3u8;32];
+    pub const Blacklisted: Role = [3u8; 32];
     #[allow(non_upper_case_globals)]
-    pub const Pauser: Role = [4u8;32];
+    pub const Pauser: Role = [4u8; 32];
     #[allow(non_upper_case_globals)]
-    pub const Controller: Role = [5u8;32];
+    pub const Controller: Role = [5u8; 32];
     #[allow(non_upper_case_globals)]
-    pub const Owner: Role = [6u8;32];
+    pub const Owner: Role = [6u8; 32];
 }
-
 
 #[odra::module(events=[RoleConfigured, RoleRevoked])]
 /// Storage module for the allowances of the token.
-pub struct StablecoinRoles{
-    roles: Mapping<(Roles::Role, Address), bool>
+pub struct StablecoinRoles {
+    roles: Mapping<(Roles::Role, Address), bool>,
 }
 
 #[odra::module]
