@@ -4,7 +4,7 @@ mod transfer_tests {
     use odra::host::{Deployer, HostRef, NoArgs};
 
     use crate::stablecoin::errors::Error::{CannotTargetSelfUser, InsufficientBalance};
-    use crate::stablecoin::tests::client_contract_test::Cep18ClientContractHostRef;
+    use crate::stablecoin::tests::client_contract_test::StablecoinClientContractHostRef;
     use crate::stablecoin_contract::tests::{
         setup, ALLOWANCE_AMOUNT_1, TOKEN_TOTAL_SUPPLY, TRANSFER_AMOUNT_1,
     };
@@ -86,7 +86,7 @@ mod transfer_tests {
     #[test]
     fn should_transfer_from_account_by_contract() {
         let mut cep18_token = setup(false);
-        let client_contract = Cep18ClientContractHostRef::deploy(cep18_token.env(), NoArgs);
+        let client_contract = StablecoinClientContractHostRef::deploy(cep18_token.env(), NoArgs);
         let spender = cep18_token.env().get_account(1);
         let owner = cep18_token.env().get_account(0);
 
@@ -200,7 +200,7 @@ mod transfer_tests {
         // given a token
         let mut cep18_token = setup(false);
         let owner = cep18_token.env().get_account(0);
-        let client_contract = Cep18ClientContractHostRef::deploy(cep18_token.env(), NoArgs);
+        let client_contract = StablecoinClientContractHostRef::deploy(cep18_token.env(), NoArgs);
 
         // when the owner transfers tokens to another contract
         cep18_token.transfer(client_contract.address(), &TRANSFER_AMOUNT_1.into());

@@ -1,10 +1,10 @@
 #[cfg(test)]
 mod mint_and_burn_tests {
-    use crate::stablecoin::utils::Cep18Modality;
+    use crate::stablecoin::utils::StablecoinModality;
     use crate::stablecoin_contract::tests::{
         setup_with_args, TOKEN_DECIMALS, TOKEN_NAME, TOKEN_SYMBOL, TOKEN_TOTAL_SUPPLY,
     };
-    use crate::stablecoin_contract::{Cep18HostRef, Cep18InitArgs};
+    use crate::stablecoin_contract::{StablecoinHostRef, StablecoinInitArgs};
     use alloc::string::ToString;
     use alloc::vec;
     use odra::casper_types::U256;
@@ -19,7 +19,7 @@ mod mint_and_burn_tests {
         Address,
         Address,
         Address,
-        Cep18HostRef,
+        StablecoinHostRef,
     ) {
         let env = odra_test::env();
         let master_minter = env.get_account(1);
@@ -28,7 +28,7 @@ mod mint_and_burn_tests {
         let blacklister = env.get_account(4);
         let pauser = env.get_account(5);
         let user = env.get_account(6);
-        let args = Cep18InitArgs {
+        let args = StablecoinInitArgs {
             symbol: TOKEN_SYMBOL.to_string(),
             name: TOKEN_NAME.to_string(),
             decimals: TOKEN_DECIMALS,
@@ -37,7 +37,7 @@ mod mint_and_burn_tests {
             owner_list: vec![],
             pauser_list: vec![pauser],
             blacklister: blacklister,
-            modality: Some(Cep18Modality::MintAndBurn),
+            modality: Some(StablecoinModality::MintAndBurn),
         };
         let cep18_token = setup_with_args(&env, args);
         (

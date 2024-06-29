@@ -1,19 +1,19 @@
 #[cfg(test)]
 mod allowance_tests {
     use crate::stablecoin::errors::Error::InsufficientAllowance;
-    use crate::stablecoin::tests::client_contract_test::Cep18ClientContractHostRef;
+    use crate::stablecoin::tests::client_contract_test::StablecoinClientContractHostRef;
     use crate::stablecoin_contract::tests::{
         invert_address, setup, setup_with_args, ALLOWANCE_AMOUNT_1, ALLOWANCE_AMOUNT_2,
         TOKEN_DECIMALS, TOKEN_NAME, TOKEN_SYMBOL, TOKEN_TOTAL_SUPPLY, TRANSFER_AMOUNT_1,
     };
-    use crate::stablecoin_contract::{Cep18HostRef, Cep18InitArgs};
+    use crate::stablecoin_contract::{StablecoinHostRef, StablecoinInitArgs};
     use core::ops::Add;
     use odra::casper_types::U256;
     use odra::host::{Deployer, HostRef, NoArgs};
     use odra::Address;
 
     fn test_approve_for(
-        cep18_token: &mut Cep18HostRef,
+        cep18_token: &mut StablecoinHostRef,
         sender: Address,
         owner: Address,
         spender: Address,
@@ -55,8 +55,8 @@ mod allowance_tests {
         let owner = cep18_token.env().caller();
         let alice = cep18_token.env().get_account(1);
         let token_address = *cep18_token.address();
-        let client_contract = Cep18ClientContractHostRef::deploy(cep18_token.env(), NoArgs);
-        let another_client_contract = Cep18ClientContractHostRef::deploy(cep18_token.env(), NoArgs);
+        let client_contract = StablecoinClientContractHostRef::deploy(cep18_token.env(), NoArgs);
+        let another_client_contract = StablecoinClientContractHostRef::deploy(cep18_token.env(), NoArgs);
 
         let client_contract_address = client_contract.address();
         let another_client_contract_address = another_client_contract.address();
@@ -173,7 +173,7 @@ mod allowance_tests {
         let controller_1 = env.get_account(2);
         let minter_1 = env.get_account(3);
         let blacklister = env.get_account(4);
-        let args = Cep18InitArgs {
+        let args = StablecoinInitArgs {
             symbol: TOKEN_SYMBOL.to_string(),
             name: TOKEN_NAME.to_string(),
             decimals: TOKEN_DECIMALS,
@@ -182,7 +182,7 @@ mod allowance_tests {
             owner_list: vec![],
             pauser_list: vec![],
             blacklister: blacklister,
-            modality: Some(crate::stablecoin::utils::Cep18Modality::MintAndBurn),
+            modality: Some(crate::stablecoin::utils::StablecoinModality::MintAndBurn),
         };
         let mut cep18_token = setup_with_args(&env, args);
         cep18_token.env().set_caller(master_minter);
@@ -198,7 +198,7 @@ mod allowance_tests {
         let controller_1 = env.get_account(2);
         let minter_1 = env.get_account(3);
         let blacklister = env.get_account(4);
-        let args = Cep18InitArgs {
+        let args = StablecoinInitArgs {
             symbol: TOKEN_SYMBOL.to_string(),
             name: TOKEN_NAME.to_string(),
             decimals: TOKEN_DECIMALS,
@@ -207,7 +207,7 @@ mod allowance_tests {
             owner_list: vec![],
             pauser_list: vec![],
             blacklister: blacklister,
-            modality: Some(crate::stablecoin::utils::Cep18Modality::MintAndBurn),
+            modality: Some(crate::stablecoin::utils::StablecoinModality::MintAndBurn),
         };
         let mut cep18_token = setup_with_args(&env, args);
         cep18_token.env().set_caller(master_minter);

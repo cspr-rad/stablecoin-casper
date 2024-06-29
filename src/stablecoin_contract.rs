@@ -11,33 +11,33 @@ use crate::stablecoin::events::{
 };
 use crate::stablecoin::storage::Roles::{self, Role};
 use crate::stablecoin::storage::{
-    Cep18AllowancesStorage, Cep18BalancesStorage, Cep18DecimalsStorage,
-    Cep18MinterAllowancesStorage, Cep18NameStorage, Cep18SymbolStorage, Cep18TotalSupplyStorage,
+    StablecoinAllowancesStorage, StablecoinBalancesStorage, StablecoinDecimalsStorage,
+    StablecoinMinterAllowancesStorage, StablecoinNameStorage, StablecoinSymbolStorage, StablecoinTotalSupplyStorage,
     StablecoinRoles,
 };
-use crate::stablecoin::utils::Cep18Modality;
+use crate::stablecoin::utils::StablecoinModality;
 
 /// CEP-18 token module
 #[odra::module(events = [Mint, Burn, SetAllowance, IncreaseAllowance, DecreaseAllowance, Transfer, TransferFrom])]
-pub struct Cep18 {
-    decimals: SubModule<Cep18DecimalsStorage>,
-    symbol: SubModule<Cep18SymbolStorage>,
-    name: SubModule<Cep18NameStorage>,
-    total_supply: SubModule<Cep18TotalSupplyStorage>,
-    balances: SubModule<Cep18BalancesStorage>,
-    allowances: SubModule<Cep18AllowancesStorage>,
-    minter_allowances: SubModule<Cep18MinterAllowancesStorage>,
+pub struct Stablecoin {
+    decimals: SubModule<StablecoinDecimalsStorage>,
+    symbol: SubModule<StablecoinSymbolStorage>,
+    name: SubModule<StablecoinNameStorage>,
+    total_supply: SubModule<StablecoinTotalSupplyStorage>,
+    balances: SubModule<StablecoinBalancesStorage>,
+    allowances: SubModule<StablecoinAllowancesStorage>,
+    minter_allowances: SubModule<StablecoinMinterAllowancesStorage>,
     roles: SubModule<StablecoinRoles>,
     controllers: Mapping<Address, Address>,
     // The Blacklister for this Contract
     blacklister: Var<Address>,
     paused: Var<bool>,
     /// This stores all Stablecoin Roles (MasterMinters, Owners, Pauser, ...)
-    modality: Var<Cep18Modality>,
+    modality: Var<StablecoinModality>,
 }
 
 #[odra::module]
-impl Cep18 {
+impl Stablecoin {
     /// Initializes the contract with the given metadata, initial supply, security and modality.
     #[allow(clippy::too_many_arguments)]
     pub fn init(
@@ -51,7 +51,7 @@ impl Cep18 {
         owner_list: Vec<Address>,
         pauser_list: Vec<Address>,
         blacklister: Address,
-        modality: Option<Cep18Modality>,
+        modality: Option<StablecoinModality>,
     ) {
         let caller = self.env().caller();
         // set the metadata
@@ -421,7 +421,7 @@ impl Cep18 {
     }
 }
 
-impl Cep18 {
+impl Stablecoin {
     /// Transfers tokens from the sender to the recipient without checking the permissions.
     fn raw_transfer(&mut self, sender: &Address, recipient: &Address, amount: &U256) {
         self.require_unpaused();
@@ -481,13 +481,13 @@ pub(crate) mod tests {
     use alloc::string::ToString;
     use alloc::vec;
 
-    use crate::stablecoin::utils::Cep18Modality;
+    use crate::stablecoin::utils::StablecoinModality;
     use odra::casper_types::account::AccountHash;
     use odra::casper_types::ContractPackageHash;
     use odra::host::{Deployer, HostEnv, HostRef};
     use odra::Address;
 
-    use crate::stablecoin_contract::{Cep18HostRef, Cep18InitArgs};
+    use crate::stablecoin_contract::{StablecoinHostRef, StablecoinInitArgs};
 
     pub const TOKEN_NAME: &str = "USDCoin";
     pub const TOKEN_SYMBOL: &str = "USDC";
@@ -497,16 +497,16 @@ pub(crate) mod tests {
     pub const ALLOWANCE_AMOUNT_1: u64 = 456_789;
     pub const ALLOWANCE_AMOUNT_2: u64 = 87_654;
 
-    pub fn setup(enable_mint_and_burn: bool) -> Cep18HostRef {
+    pub fn setup(enable_mint_and_burn: bool) -> StablecoinHostRef {
         let env = odra_test::env();
         let modality = if enable_mint_and_burn {
-            Cep18Modality::MintAndBurn
+            StablecoinModality::MintAndBurn
         } else {
-            Cep18Modality::None
+            StablecoinModality::None
         };
         let blacklister = env.get_account(3);
 
-        let init_args = Cep18InitArgs {
+        let init_args = StablecoinInitArgs {
             symbol: TOKEN_SYMBOL.to_string(),
             name: TOKEN_NAME.to_string(),
             decimals: TOKEN_DECIMALS,
@@ -520,8 +520,8 @@ pub(crate) mod tests {
         setup_with_args(&env, init_args)
     }
 
-    pub fn setup_with_args(env: &HostEnv, args: Cep18InitArgs) -> Cep18HostRef {
-        Cep18HostRef::deploy(env, args)
+    pub fn setup_with_args(env: &HostEnv, args: StablecoinInitArgs) -> StablecoinHostRef {
+        StablecoinHostRef::deploy(env, args)
     }
 
     pub fn invert_address(address: Address) -> Address {

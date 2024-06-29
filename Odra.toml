@@ -1,5 +1,5 @@
 [[contracts]]
-fqn = "stablecoin::Cep18"
+fqn = "stablecoin::Stablecoin"
 
 [[contracts]]
-fqn = "stablecoin::cep18_client_contract::Cep18ClientContract"
+fqn = "stablecoin::tests::client_contract_tests::StablecoinClientContract"

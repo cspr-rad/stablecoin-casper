@@ -1,14 +1,14 @@
 #[cfg(test)]
 mod test_permissions {
-    use crate::stablecoin::utils::Cep18Modality;
+    use crate::stablecoin::utils::StablecoinModality;
     use crate::stablecoin_contract::tests::{
         setup_with_args, TOKEN_DECIMALS, TOKEN_NAME, TOKEN_SYMBOL, TOKEN_TOTAL_SUPPLY,
     };
-    use crate::stablecoin_contract::{Cep18HostRef, Cep18InitArgs};
+    use crate::stablecoin_contract::{StablecoinHostRef, StablecoinInitArgs};
     use alloc::string::ToString;
     use alloc::vec;
     use odra::casper_types::U256;
-    use odra::host::{HostEnv, HostRef};
+    use odra::host::HostEnv;
     use odra::Address;
 
     fn setup() -> (
@@ -19,7 +19,7 @@ mod test_permissions {
         Address,
         Address,
         Address,
-        Cep18HostRef,
+        StablecoinHostRef,
     ) {
         let env = odra_test::env();
         let master_minter = env.get_account(1);
@@ -28,7 +28,7 @@ mod test_permissions {
         let blacklister = env.get_account(4);
         let pauser = env.get_account(5);
         let user = env.get_account(6);
-        let args = Cep18InitArgs {
+        let args = StablecoinInitArgs {
             symbol: TOKEN_SYMBOL.to_string(),
             name: TOKEN_NAME.to_string(),
             decimals: TOKEN_DECIMALS,
@@ -37,9 +37,9 @@ mod test_permissions {
             owner_list: vec![],
             pauser_list: vec![pauser],
             blacklister: blacklister,
-            modality: Some(Cep18Modality::MintAndBurn),
+            modality: Some(StablecoinModality::MintAndBurn),
         };
-        let cep18_token = setup_with_args(&env, args);
+        let stablecoin = setup_with_args(&env, args);
         (
             env,
             master_minter,
@@ -48,28 +48,28 @@ mod test_permissions {
             blacklister,
             pauser,
             user,
-            cep18_token,
+            stablecoin,
         )
     }
 
     #[test]
     fn test_minter_permissions() {
-        let (env, master_minter, controller_1, minter_1, .., user, mut cep18_token) = setup();
-        cep18_token.env().set_caller(master_minter);
-        cep18_token.configure_controller(&controller_1, &minter_1);
+        let (env, master_minter, controller_1, minter_1, .., user, mut stablecoin) = setup();
+        env.set_caller(master_minter);
+        stablecoin.configure_controller(&controller_1, &minter_1);
         assert!(
-            env.emitted(&cep18_token, "ControllerConfigured"),
+            env.emitted(&stablecoin, "ControllerConfigured"),
             "ControllerConfigured event not emitted"
         );
-        cep18_token.env().set_caller(controller_1);
-        cep18_token.configure_minter_allowance(U256::from(10));
+        env.set_caller(controller_1);
+        stablecoin.configure_minter_allowance(U256::from(10));
         assert!(
-            env.emitted(&cep18_token, "MinterConfigured"),
+            env.emitted(&stablecoin, "MinterConfigured"),
             "MinterConfigured event not emitted"
         );
-        cep18_token.env().set_caller(minter_1);
+        env.set_caller(minter_1);
         // try to mint legally, but exceed the allowance
-        let result: Result<(), odra::OdraError> = cep18_token.try_mint(&user, U256::from(11));
+        let result: Result<(), odra::OdraError> = stablecoin.try_mint(&user, U256::from(11));
         match result {
             Ok(_) => {
                 panic!("Security Incident: Mint that exceeds the Allowance went through!")
@@ -77,8 +77,8 @@ mod test_permissions {
             _ => {}
         }
         // try to mint illegally
-        cep18_token.env().set_caller(user);
-        let result: Result<(), odra::OdraError> = cep18_token.try_mint(&user, U256::from(10));
+        env.set_caller(user);
+        let result: Result<(), odra::OdraError> = stablecoin.try_mint(&user, U256::from(10));
         match result {
             Ok(_) => {
                 panic!("Security Incident: Illegal mint went through!")
@@ -86,11 +86,11 @@ mod test_permissions {
             _ => {}
         }
         // remove the minter
-        cep18_token.env().set_caller(controller_1);
-        cep18_token.remove_minter();
+        env.set_caller(controller_1);
+        stablecoin.remove_minter();
         // try to mint with disabled minter
-        cep18_token.env().set_caller(minter_1);
-        let result: Result<(), odra::OdraError> = cep18_token.try_mint(&user, U256::from(10));
+        env.set_caller(minter_1);
+        let result: Result<(), odra::OdraError> = stablecoin.try_mint(&user, U256::from(10));
         match result {
             Ok(_) => {
                 panic!("Security Incident: Illegal mint went through!")
@@ -101,20 +101,39 @@ mod test_permissions {
 
     #[test]
     fn test_revoke_minter_and_controller() {
-        let (env, master_minter, controller_1, minter_1, .., mut cep18_token) = setup();
-        cep18_token.env().set_caller(master_minter);
-        cep18_token.configure_controller(&controller_1, &minter_1);
-        cep18_token.env().set_caller(controller_1);
-        cep18_token.remove_minter();
+        let (env, master_minter, controller_1, minter_1, .., mut stablecoin) = setup();
+        env.set_caller(master_minter);
+        stablecoin.configure_controller(&controller_1, &minter_1);
+        env.set_caller(controller_1);
+        stablecoin.remove_minter();
         assert!(
-            env.emitted(&cep18_token, "MinterRemoved"),
+            env.emitted(&stablecoin, "MinterRemoved"),
             "MinterRemoved event not emitted"
         );
-        cep18_token.env().set_caller(master_minter);
-        cep18_token.remove_controller(&controller_1);
+        env.set_caller(master_minter);
+        stablecoin.remove_controller(&controller_1);
         assert!(
-            env.emitted(&cep18_token, "ControllerRemoved"),
+            env.emitted(&stablecoin, "ControllerRemoved"),
             "ControllerRemoved event not emitted"
         );
+    }
+
+    #[test]
+    fn must_not_mint_when_paused(){
+        let (env, master_minter, controller_1, minter_1, .., pauser, user, mut stablecoin) = setup();
+        env.set_caller(master_minter);
+        stablecoin.configure_controller(&controller_1, &minter_1);
+        env.set_caller(controller_1);
+        stablecoin.configure_minter_allowance(U256::from(10));
+        env.set_caller(pauser);
+        stablecoin.pause();
+        env.set_caller(minter_1);
+        let result: Result<(), odra::OdraError> = stablecoin.try_mint(&user, U256::from(10));
+        match result{
+            Ok(_) => {
+                panic!("Security Incident: Illegal mint went through!")
+            }
+            _ => {}
+        }
     }
 }

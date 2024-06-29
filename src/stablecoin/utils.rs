@@ -1,7 +1,7 @@
 /// Modality of the CEP-18 contract.
 #[derive(Default)]
 #[odra::odra_type]
-pub enum Cep18Modality {
+pub enum StablecoinModality {
     /// No modailities are set.
     #[default]
     None = 0,
@@ -9,16 +9,16 @@ pub enum Cep18Modality {
     MintAndBurn = 1,
 }
 
-impl Cep18Modality {
+impl StablecoinModality {
     /// Returns true if the mint and burn functionality is enabled.
     pub fn mint_and_burn_enabled(&self) -> bool {
-        matches!(self, Cep18Modality::MintAndBurn)
+        matches!(self, StablecoinModality::MintAndBurn)
     }
 }
 
 // implement conversion from modality into u8
-impl From<Cep18Modality> for u8 {
-    fn from(modality: Cep18Modality) -> u8 {
+impl From<StablecoinModality> for u8 {
+    fn from(modality: StablecoinModality) -> u8 {
         modality as u8
     }
 }

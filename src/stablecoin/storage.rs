@@ -21,10 +21,10 @@ const TOTAL_SUPPLY_KEY: &str = "total_supply";
 
 #[odra::module]
 /// Storage module for the name of the token.
-pub struct Cep18NameStorage;
+pub struct StablecoinNameStorage;
 
 #[odra::module]
-impl Cep18NameStorage {
+impl StablecoinNameStorage {
     /// Sets the name of the token.
     pub fn set(&self, name: String) {
         self.env().set_named_value(NAME_KEY, name);
@@ -40,10 +40,10 @@ impl Cep18NameStorage {
 
 #[odra::module]
 /// Storage module for the number of decimals of the token.
-pub struct Cep18DecimalsStorage;
+pub struct StablecoinDecimalsStorage;
 
 #[odra::module]
-impl Cep18DecimalsStorage {
+impl StablecoinDecimalsStorage {
     /// Sets the number of decimals of the token.
     pub fn set(&self, decimals: u8) {
         self.env().set_named_value(DECIMALS_KEY, decimals);
@@ -59,10 +59,10 @@ impl Cep18DecimalsStorage {
 
 #[odra::module]
 /// Storage module for the symbol of the token.
-pub struct Cep18SymbolStorage;
+pub struct StablecoinSymbolStorage;
 
 #[odra::module]
-impl Cep18SymbolStorage {
+impl StablecoinSymbolStorage {
     /// Sets the symbol of the token.
     pub fn set(&self, symbol: String) {
         self.env().set_named_value(SYMBOL_KEY, symbol);
@@ -78,10 +78,10 @@ impl Cep18SymbolStorage {
 
 #[odra::module]
 /// Storage module for the total supply of the token.
-pub struct Cep18TotalSupplyStorage;
+pub struct StablecoinTotalSupplyStorage;
 
 #[odra::module]
-impl Cep18TotalSupplyStorage {
+impl StablecoinTotalSupplyStorage {
     /// Sets the total supply of the token.
     pub fn set(&self, total_supply: U256) {
         self.env().set_named_value(TOTAL_SUPPLY_KEY, total_supply);
@@ -115,10 +115,10 @@ impl Cep18TotalSupplyStorage {
 
 #[odra::module]
 /// Storage module for the balances of the token.
-pub struct Cep18BalancesStorage;
+pub struct StablecoinBalancesStorage;
 
 #[odra::module]
-impl Cep18BalancesStorage {
+impl StablecoinBalancesStorage {
     /// Sets the balance of the given account.
     pub fn set(&self, account: &Address, balance: U256) {
         self.env()
@@ -163,10 +163,10 @@ impl Cep18BalancesStorage {
 
 #[odra::module]
 /// Storage module for the allowances of the token.
-pub struct Cep18AllowancesStorage;
+pub struct StablecoinAllowancesStorage;
 
 #[odra::module]
-impl Cep18AllowancesStorage {
+impl StablecoinAllowancesStorage {
     /// Sets the allowance of the given owner and spender.
     pub fn set(&self, owner: &Address, spender: &Address, amount: U256) {
         self.env()
@@ -212,10 +212,10 @@ impl Cep18AllowancesStorage {
 
 #[odra::module]
 /// Storage module for the allowances of the token.
-pub struct Cep18MinterAllowancesStorage;
+pub struct StablecoinMinterAllowancesStorage;
 
 #[odra::module]
-impl Cep18MinterAllowancesStorage {
+impl StablecoinMinterAllowancesStorage {
     /// Sets the allowance of the given owner and spender.
     pub fn set(&self, minter: &Address, amount: U256) {
         self.env()
