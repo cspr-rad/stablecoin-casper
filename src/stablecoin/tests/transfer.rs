@@ -60,6 +60,10 @@ mod transfer_tests {
         let alice = env.get_account(1);
         let amount = TOKEN_TOTAL_SUPPLY.into();
         stablecoin.transfer(&alice, &amount);
+        assert!(
+            stablecoin.env().emitted(&stablecoin, "Transfer"),
+            "Transfer event not emitted"
+        );
         assert_eq!(stablecoin.balance_of(&owner), 0.into());
         assert_eq!(stablecoin.balance_of(&alice), amount);
         assert_eq!(stablecoin.total_supply(), amount);
@@ -86,12 +90,20 @@ mod transfer_tests {
         let transfer_amount = TRANSFER_AMOUNT_1.into();
         let allowance_amount = ALLOWANCE_AMOUNT_1.into();
         stablecoin.approve(&alice, &allowance_amount);
+        assert!(
+            stablecoin.env().emitted(&stablecoin, "SetAllowance"),
+            "SetAllowance event not emitted"
+        );
         assert_eq!(stablecoin.allowance(&owner, &alice), allowance_amount);
         env.set_caller(alice);
         stablecoin.transfer_from(&owner, &alice, &transfer_amount);
         assert_eq!(
             stablecoin.balance_of(&owner),
             U256::from(TOKEN_TOTAL_SUPPLY) - transfer_amount
+        );
+        assert!(
+            stablecoin.env().emitted(&stablecoin, "TransferFrom"),
+            "TransferFrom event not emitted"
         );
         assert_eq!(stablecoin.balance_of(&alice), transfer_amount);
         assert_eq!(
@@ -107,6 +119,10 @@ mod transfer_tests {
         let spender = env.get_account(1);
         let owner = env.get_account(0);
         stablecoin.approve(client_contract.address(), &ALLOWANCE_AMOUNT_1.into());
+        assert!(
+            stablecoin.env().emitted(&stablecoin, "SetAllowance"),
+            "SetAllowance event not emitted"
+        );
         let spender_allowance_before = stablecoin.allowance(&owner, client_contract.address());
         let owner_balance_before = stablecoin.balance_of(&owner);
         client_contract.transfer_from_as_stored_contract(
@@ -115,9 +131,17 @@ mod transfer_tests {
             spender,
             ALLOWANCE_AMOUNT_1.into(),
         );
+        assert!(
+            stablecoin.env().emitted(&stablecoin, "TransferFrom"),
+            "TransferFrom event not emitted"
+        );
         assert_eq!(
             spender_allowance_before - ALLOWANCE_AMOUNT_1,
             stablecoin.allowance(&owner, &spender)
+        );
+        assert!(
+            stablecoin.env().emitted(&stablecoin, "SetAllowance"),
+            "SetAllowance event not emitted"
         );
         assert_eq!(
             owner_balance_before - ALLOWANCE_AMOUNT_1,
@@ -184,6 +208,10 @@ mod transfer_tests {
         let owner = env.get_account(0);
         let client_contract = StablecoinClientContractHostRef::deploy(stablecoin.env(), NoArgs);
         stablecoin.transfer(client_contract.address(), &TRANSFER_AMOUNT_1.into());
+        assert!(
+            stablecoin.env().emitted(&stablecoin, "Transfer"),
+            "Transfer event not emitted"
+        );
         assert_eq!(
             stablecoin.balance_of(&owner),
             (TOKEN_TOTAL_SUPPLY - TRANSFER_AMOUNT_1).into()
