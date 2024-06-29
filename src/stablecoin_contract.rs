@@ -14,7 +14,8 @@ use crate::stablecoin::storage::{
     Cep18MinterAllowancesStorage, Cep18NameStorage, Cep18SymbolStorage, Cep18TotalSupplyStorage,
     StablecoinRoles,
 };
-use crate::stablecoin::utils::{Cep18Modality, Role};
+use crate::stablecoin::utils::Cep18Modality;
+use crate::stablecoin::storage::Roles::{Role, self};
 
 /// CEP-18 token module
 #[odra::module(events = [Mint, Burn, SetAllowance, IncreaseAllowance, DecreaseAllowance, Transfer, TransferFrom])]
@@ -68,18 +69,18 @@ impl Cep18 {
 
         for master_minter in master_minter_list {
             self.roles
-                .configure_role(&master_minter, Role::MasterMinter);
+                .configure_role(&Roles::MasterMinter, &master_minter);
         }
 
         for owner in owner_list {
-            self.roles.configure_role(&owner, Role::Owner);
+            self.roles.configure_role(&Roles::Owner, &owner);
         }
 
         for pauser in pauser_list {
-            self.roles.configure_role(&pauser, Role::Pauser);
+            self.roles.configure_role(&Roles::Pauser, &pauser);
         }
 
-        self.roles.configure_role(&blacklister, Role::Blacklister);
+        self.roles.configure_role(&Roles::Blacklister, &blacklister);
 
         // set the modality
         if let Some(modality) = modality {
@@ -120,8 +121,8 @@ impl Cep18 {
     /// Approves the spender to spend the given amount of tokens on behalf of the caller.
     pub fn approve(&mut self, spender: &Address, amount: &U256) {
         self.require_unpaused();
-        self.require_not_role(&self.caller(), Role::Blacklisted);
-        self.require_not_role(spender, Role::Blacklisted);
+        self.require_not_role(&self.caller(), &Roles::Blacklisted);
+        self.require_not_role(spender, &Roles::Blacklisted);
         let owner = self.env().caller();
         if owner == *spender {
             self.env().revert(Error::CannotTargetSelfUser);
@@ -178,8 +179,8 @@ impl Cep18 {
 
     /// Transfers tokens from the owner to the recipient using the spender's allowance.
     pub fn transfer_from(&mut self, owner: &Address, recipient: &Address, amount: &U256) {
-        self.require_not_role(owner, Role::Blacklisted);
-        self.require_not_role(recipient, Role::Blacklisted);
+        self.require_not_role(owner, &Roles::Blacklisted);
+        self.require_not_role(recipient, &Roles::Blacklisted);
         let spender = self.env().caller();
         if owner == recipient {
             self.env().revert(Error::CannotTargetSelfUser);
@@ -223,8 +224,8 @@ impl Cep18 {
 
     /// Mints new tokens and assigns them to the given address.
     pub fn mint(&mut self, owner: &Address, amount: U256) {
-        self.require_role(&self.caller(), Role::Minter);
-        self.require_not_role(owner, Role::Blacklisted);
+        self.require_role(&self.caller(), &Roles::Minter);
+        self.require_not_role(owner, &Roles::Blacklisted);
         self.assert_burn_and_mint_enabled();
         // minter allowance must be sufficient
         let minter_allowance: U256 = self.minter_allowances.get_or_default(&self.env().caller());
@@ -239,46 +240,47 @@ impl Cep18 {
 
     /// Pause this contract
     pub fn pause(&mut self) {
-        self.require_role(&self.caller(), Role::Pauser);
-        self.require_not_role(&self.caller(), Role::Blacklisted);
+        self.require_role(&self.caller(), &Roles::Pauser);
+        self.require_not_role(&self.caller(), &Roles::Blacklisted);
         self.paused.set(true);
         self.env().emit_event(Paused {});
     }
 
     /// Unpause this contract
     pub fn unpause(&mut self) {
-        self.require_role(&self.caller(), Role::Pauser);
-        self.require_not_role(&self.caller(), Role::Blacklisted);
+        self.require_role(&self.caller(), &Roles::Pauser);
+        self.require_not_role(&self.caller(), &Roles::Blacklisted);
         self.paused.set(false);
         self.env().emit_event(Unpaused {});
     }
 
     /// Blacklist an account
     pub fn blacklist(&mut self, account: &Address) {
-        self.require_role(&self.caller(), Role::Blacklister);
-        self.roles.configure_role(account, Role::Blacklisted);
+        self.require_role(&self.caller(), &Roles::Blacklister);
+        self.roles.configure_role(&Roles::Blacklisted, account);
         self.env().emit_event(Blacklist { account: *account });
     }
 
     /// Remove an account from the Blacklist
     pub fn unblacklist(&mut self, account: &Address) {
-        self.require_role(&self.caller(), Role::Blacklister);
-        self.roles.revoke_role(account, Role::Blacklisted);
+        self.require_role(&self.caller(), &Roles::Blacklister);
+        self.roles.revoke_role(&Roles::Blacklisted, account);
         self.env().emit_event(Unblacklist { account: *account });
     }
 
     /// Update the Blacklister, can only be called by Owner
     pub fn update_blacklister(&mut self, new_blacklister: &Address) {
-        self.require_role(&self.caller(), Role::Owner);
+        self.require_role(&self.caller(), &Roles::Owner);
         self.roles.revoke_role(
+            &Roles::Blacklister,
             &self
-                .blacklister
-                .get()
-                .unwrap_or_revert_with(&self.env(), Error::MissingBlacklister),
-            Role::Blacklister,
+            .blacklister
+            .get()
+            // borrow checker is unhappy if we unwrap_or_revert() here.
+            .unwrap()
         );
         self.roles
-            .configure_role(new_blacklister, Role::Blacklister);
+            .configure_role(&Roles::Blacklister, new_blacklister);
         self.env().emit_event(BlacklisterChanged {
             new_blacklister: *new_blacklister,
         });
@@ -289,9 +291,9 @@ impl Cep18 {
 
     /// Configure minter allowance
     pub fn configure_minter_allowance(&mut self, minter_allowance: U256) {
-        self.require_role(&self.caller(), Role::Controller);
+        self.require_role(&self.caller(), &Roles::Controller);
         let minter = self.get_associated_minter(&self.caller());
-        self.require_not_role(&minter, Role::Blacklisted);
+        self.require_not_role(&minter, &Roles::Blacklisted);
         self.minter_allowances.set(&minter, minter_allowance);
         self.env().emit_event(MinterConfigured {
             minter,
@@ -301,9 +303,9 @@ impl Cep18 {
 
     /// Increase allowance for a minter
     pub fn increase_minter_allowance(&mut self, increment: U256) {
-        self.require_role(&self.caller(), Role::Controller);
+        self.require_role(&self.caller(), &Roles::Controller);
         let minter = self.get_associated_minter(&self.caller());
-        self.require_not_role(&minter, Role::Blacklisted);
+        self.require_not_role(&minter, &Roles::Blacklisted);
         self.minter_allowances.add(&minter, increment);
         self.env().emit_event(MinterConfigured {
             minter,
@@ -313,9 +315,9 @@ impl Cep18 {
 
     /// Decrease allowance for a minter
     pub fn decrease_minter_allowance(&mut self, decrement: U256) {
-        self.require_role(&self.caller(), Role::Controller);
+        self.require_role(&self.caller(), &Roles::Controller);
         let minter = self.get_associated_minter(&self.caller());
-        self.require_not_role(&minter, Role::Blacklisted);
+        self.require_not_role(&minter, &Roles::Blacklisted);
         self.minter_allowances.subtract(&minter, decrement);
         self.env().emit_event(MinterConfigured {
             minter,
@@ -325,11 +327,11 @@ impl Cep18 {
 
     /// Add a controller, minter pair
     pub fn configure_controller(&mut self, controller: &Address, minter: &Address) {
-        self.require_role(&self.caller(), Role::MasterMinter);
-        self.require_not_role(controller, Role::Blacklisted);
-        self.require_not_role(minter, Role::Blacklisted);
-        self.roles.configure_role(controller, Role::Controller);
-        self.roles.configure_role(minter, Role::Minter);
+        self.require_role(&self.caller(), &Roles::MasterMinter);
+        self.require_not_role(controller, &Roles::Blacklisted);
+        self.require_not_role(minter, &Roles::Blacklisted);
+        self.roles.configure_role(&Roles::Controller, controller);
+        self.roles.configure_role(&Roles::Minter, minter);
         self.controllers.set(&controller, *minter);
         self.env().emit_event(ControllerConfigured {
             controller: *controller,
@@ -339,8 +341,8 @@ impl Cep18 {
 
     /// Remove a controller
     pub fn remove_controller(&mut self, controller: &Address) {
-        self.require_role(&self.caller(), Role::MasterMinter);
-        self.roles.revoke_role(controller, Role::Controller);
+        self.require_role(&self.caller(), &Roles::MasterMinter);
+        self.roles.revoke_role(&Roles::Controller, controller);
         self.env().emit_event(ControllerRemoved {
             controller: *controller,
         });
@@ -348,10 +350,10 @@ impl Cep18 {
 
     /// Remove the minter role from an account
     pub fn remove_minter(&mut self) {
-        self.require_role(&self.caller(), Role::Controller);
-        self.require_not_role(&self.caller(), Role::Blacklisted);
+        self.require_role(&self.caller(), &Roles::Controller);
+        self.require_not_role(&self.caller(), &Roles::Blacklisted);
         let minter: Address = self.get_associated_minter(&self.env().caller());
-        self.roles.revoke_role(&minter, Role::Minter);
+        self.roles.revoke_role(&Roles::Minter, &minter);
         self.env().emit_event(MinterRemoved { minter })
     }
 
@@ -379,8 +381,8 @@ impl Cep18 {
 
     /// Query a minter for a controller
     pub fn get_minter(&mut self) -> Address {
-        self.require_role(&self.caller(), Role::Controller);
-        self.require_not_role(&self.caller(), Role::Blacklisted);
+        self.require_role(&self.caller(), &Roles::Controller);
+        self.require_not_role(&self.caller(), &Roles::Blacklisted);
         self.get_associated_minter(&self.caller())
     }
 
@@ -395,14 +397,14 @@ impl Cep18 {
         }
     }
 
-    fn require_role(&mut self, account: &Address, role: Role) {
-        if !self.roles.has_role(account, role) {
+    fn require_role(&mut self, account: &Address, role: &Role) {
+        if !self.roles.has_role(&role, account) {
             self.env().revert(Error::InsufficientRights);
         }
     }
 
-    fn require_not_role(&mut self, account: &Address, role: Role) {
-        if self.roles.has_role(account, role) {
+    fn require_not_role(&mut self, account: &Address, role: &Role) {
+        if self.roles.has_role(&role, account) {
             self.env().revert(Error::InsufficientRights)
         }
     }
@@ -423,7 +425,7 @@ impl Cep18 {
     /// Transfers tokens from the sender to the recipient without checking the permissions.
     fn raw_transfer(&mut self, sender: &Address, recipient: &Address, amount: &U256) {
         self.require_unpaused();
-        self.require_not_role(&self.caller(), Role::Blacklisted);
+        self.require_not_role(&self.caller(), &Roles::Blacklisted);
         if *amount > self.balances.get_or_default(sender) {
             self.env().revert(Error::InsufficientBalance)
         }
@@ -443,7 +445,7 @@ impl Cep18 {
     /// Mints new tokens and assigns them to the given address without checking the permissions.
     fn raw_mint(&mut self, owner: &Address, amount: &U256) {
         self.require_unpaused();
-        self.require_not_role(&self.caller(), Role::Blacklisted);
+        self.require_not_role(&self.caller(), &Roles::Blacklisted);
         self.total_supply.add(*amount);
         self.balances.add(owner, *amount);
 
@@ -456,7 +458,7 @@ impl Cep18 {
     /// Burns the given amount of tokens from the given address without checking the permissions.
     fn raw_burn(&mut self, owner: &Address, amount: &U256) {
         self.require_unpaused();
-        self.require_not_role(&self.caller(), Role::Blacklisted);
+        self.require_not_role(&self.caller(), &Roles::Blacklisted);
         self.total_supply.subtract(*amount);
         self.balances.subtract(owner, *amount);
 

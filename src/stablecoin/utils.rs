@@ -1,27 +1,3 @@
-/// Security badge that can be assigned to an account to grant it certain permissions.
-#[odra::odra_type]
-pub enum Role {
-    /// The account is a minter.
-    Minter = 0,
-    /// The account has no special permissions.
-    None = 1,
-    /// Stablecoin Masterminter.
-    MasterMinter = 2,
-    /// Stablecoin Blacklister.
-    Blacklister = 3,
-    /// Stablecoin Blacklisted - held by Addresses that have been Blacklisted.
-    Blacklisted = 4,
-    /// Stablecoin Pauser.
-    Pauser = 5,
-    /// Stablecoin Controller.
-    Controller = 6,
-    /// Stablecoin Owner
-    Owner = 7,
-}
-impl Role {
-    pub const VARIANTS: usize = 8;
-}
-
 /// Modality of the CEP-18 contract.
 #[derive(Default)]
 #[odra::odra_type]

@@ -3,7 +3,7 @@ use odra::casper_types::U256;
 use odra::ExecutionError::AdditionOverflow;
 
 use odra::casper_types::bytesrepr::ToBytes;
-use odra::prelude::*;
+use odra::{prelude::*, Mapping};
 use odra::{Address, UnwrapOrRevert};
 
 use crate::stablecoin::errors::Error::{InvalidState, Overflow};
@@ -11,8 +11,6 @@ use crate::stablecoin::errors::Error::{InvalidState, Overflow};
 use base64::prelude::*;
 
 use super::events::{RoleConfigured, RoleRevoked};
-use super::utils::Role;
-
 const ALLOWANCES_KEY: &str = "allowances";
 const MINTER_ALLOWANCES_KEY: &str = "minter_allowances";
 const STABLECOIN_ROLES_KEY: &str = "stablecoin_roles";
@@ -260,73 +258,97 @@ impl Cep18MinterAllowancesStorage {
     }
 }
 
+#[allow(non_snake_case)]
+pub mod Roles{
+    pub type Role = [u8;32];
+    #[allow(non_upper_case_globals)]
+    pub const Minter: Role = [0u8; 32];
+    #[allow(non_upper_case_globals)]
+    pub const MasterMinter: Role = [1u8;32];
+    #[allow(non_upper_case_globals)]
+    pub const Blacklister: Role = [2u8;32];
+    #[allow(non_upper_case_globals)]
+    pub const Blacklisted: Role = [3u8;32];
+    #[allow(non_upper_case_globals)]
+    pub const Pauser: Role = [4u8;32];
+    #[allow(non_upper_case_globals)]
+    pub const Controller: Role = [5u8;32];
+    #[allow(non_upper_case_globals)]
+    pub const Owner: Role = [6u8;32];
+}
+
+
 #[odra::module(events=[RoleConfigured, RoleRevoked])]
 /// Storage module for the allowances of the token.
-pub struct StablecoinRoles;
+pub struct StablecoinRoles{
+    roles: Mapping<(Roles::Role, Address), bool>
+}
 
 #[odra::module]
 impl StablecoinRoles {
-    pub fn configure_role(&self, account: &Address, role: Role) {
-        let mut roles: Vec<bool> = self.get_roles(account);
-        roles.insert(role.clone() as usize, true);
-        self.env()
-            .set_dictionary_value(STABLECOIN_ROLES_KEY, &self.key(account), roles);
+    pub fn configure_role(&mut self, role: &Roles::Role, account: &Address) {
+        self.roles.set(&(*role, *account), true);
         self.env().emit_event(RoleConfigured {
-            role,
+            role: *role,
             account: *account,
         });
     }
 
-    pub fn revoke_role(&self, account: &Address, role: Role) {
-        let mut roles: Vec<bool> = self.get_roles(account);
-        roles.insert(role.clone() as usize, false);
-        self.env()
-            .set_dictionary_value(STABLECOIN_ROLES_KEY, &self.key(account), roles);
-        self.env().emit_event(RoleRevoked {
-            role,
-            account: *account,
-        });
+    pub fn revoke_role(&mut self, role: &Roles::Role, account: &Address) {
+        if self.has_role(role, account) {
+            self.roles.set(&(*role, *account), false);
+            self.env().emit_event(RoleRevoked {
+                role: *role,
+                account: *account,
+            });
+        }
     }
 
     pub fn is_minter(&self, account: &Address) -> bool {
-        self.has_role(account, Role::Minter)
+        self.has_role(&Roles::Minter, account)
     }
     pub fn is_master_minter(&self, account: &Address) -> bool {
-        self.has_role(account, Role::MasterMinter)
+        self.has_role(&Roles::MasterMinter, account)
     }
     pub fn is_blacklister(&self, account: &Address) -> bool {
-        self.has_role(account, Role::Blacklister)
+        self.has_role(&Roles::Blacklister, account)
     }
     pub fn is_blacklisted(&self, account: &Address) -> bool {
-        self.has_role(account, Role::Blacklisted)
+        self.has_role(&Roles::Blacklisted, account)
     }
     pub fn is_pauser(&self, account: &Address) -> bool {
-        self.has_role(account, Role::Pauser)
+        self.has_role(&Roles::Pauser, account)
     }
     pub fn is_controller(&self, account: &Address) -> bool {
-        self.has_role(account, Role::Controller)
+        self.has_role(&Roles::Controller, account)
     }
     pub fn is_owner(&self, account: &Address) -> bool {
-        self.has_role(account, Role::Owner)
+        self.has_role(&Roles::Owner, account)
     }
 
-    fn get_roles(&self, account: &Address) -> Vec<bool> {
-        self.env()
-            .get_dictionary_value(STABLECOIN_ROLES_KEY, &self.key(account))
-            .unwrap_or(vec![false; Role::VARIANTS])
+    /*fn get_roles(&self, account: &Address) -> Vec<bool> {
+        // todo: ensure these are in order
+        let mut roles: Vec<bool> = Vec::new();
+        roles.push(self.is_minter(account));
+        roles.push(self.is_master_minter(account));
+        roles.push(self.is_blacklister(account));
+        roles.push(self.is_blacklisted(account));
+        roles.push(self.is_pauser(account));
+        roles.push(self.is_controller(account));
+        roles.push(self.is_owner(account));
+        roles
+    }*/
+
+    pub fn has_role(&self, role: &Roles::Role, account: &Address) -> bool {
+        self.roles.get_or_default(&(*role, *account))
     }
 
-    pub fn has_role(&self, account: &Address, role: Role) -> bool {
-        let roles: Vec<bool> = self.get_roles(account);
-        roles.get(role as usize).cloned().unwrap_or(false)
-    }
-
-    fn key(&self, account: &Address) -> [u8; 64] {
+    /*fn key(&self, account: &Address) -> [u8; 64] {
         let mut result = [0u8; 64];
         let mut preimage = Vec::new();
         preimage.append(&mut account.to_bytes().unwrap_or_revert(&self.env()));
         let key_bytes = self.env().hash(&preimage);
         odra::utils::hex_to_slice(&key_bytes, &mut result);
         result
-    }
+    }*/
 }

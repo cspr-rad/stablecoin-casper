@@ -1,8 +1,7 @@
 use odra::casper_types::U256;
 use odra::prelude::*;
 use odra::Address;
-
-use crate::stablecoin::utils::Role;
+use crate::stablecoin::storage::Roles::Role;
 
 /// An event emitted when a mint operation is performed.
 #[odra::event]
