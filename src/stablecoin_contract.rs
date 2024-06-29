@@ -213,12 +213,6 @@ impl Stablecoin {
         if amount == U256::zero() {
             self.env().revert(Error::InvalidAmount)
         }
-        let minter_allowance: U256 = self.minter_allowances.get_or_default(&self.env().caller());
-        // minter allowance must be sufficient
-        if &minter_allowance < &amount {
-            self.env().revert(Error::InsufficientMinterAllowance);
-        }
-        self.minter_allowances.subtract(&self.caller(), amount);
         self.raw_burn(&self.caller(), &amount);
     }
 
