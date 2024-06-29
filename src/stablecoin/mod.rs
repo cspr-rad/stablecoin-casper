@@ -4,6 +4,6 @@ pub mod errors;
 pub mod events;
 /// Cep18 module storage.
 pub mod storage;
+mod tests;
 /// Cep18 module utils.
 pub mod utils;
-mod tests;

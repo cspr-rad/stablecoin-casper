@@ -1,231 +1,205 @@
 #[cfg(test)]
 mod transfer_tests {
     use odra::casper_types::U256;
-    use odra::host::{Deployer, HostRef, NoArgs};
+    use odra::host::{Deployer, HostEnv, HostRef, NoArgs};
+    use odra::Address;
 
     use crate::stablecoin::errors::Error::{CannotTargetSelfUser, InsufficientBalance};
     use crate::stablecoin::tests::client_contract_test::StablecoinClientContractHostRef;
     use crate::stablecoin_contract::tests::{
-        setup, ALLOWANCE_AMOUNT_1, TOKEN_TOTAL_SUPPLY, TRANSFER_AMOUNT_1,
+        setup_with_args, ALLOWANCE_AMOUNT_1, TOKEN_DECIMALS, TOKEN_NAME, TOKEN_SYMBOL,
+        TOKEN_TOTAL_SUPPLY, TRANSFER_AMOUNT_1,
     };
+    use crate::stablecoin_contract::{StablecoinHostRef, StablecoinInitArgs};
+
+    fn setup() -> (
+        HostEnv,
+        Address,
+        Address,
+        Address,
+        Address,
+        Address,
+        Address,
+        StablecoinHostRef,
+    ) {
+        let env = odra_test::env();
+        let master_minter = env.get_account(1);
+        let controller_1 = env.get_account(2);
+        let minter_1 = env.get_account(3);
+        let blacklister = env.get_account(4);
+        let pauser = env.get_account(5);
+        let user = env.get_account(6);
+        let args = StablecoinInitArgs {
+            symbol: TOKEN_SYMBOL.to_string(),
+            name: TOKEN_NAME.to_string(),
+            decimals: TOKEN_DECIMALS,
+            initial_supply: TOKEN_TOTAL_SUPPLY.into(),
+            master_minter_list: vec![master_minter],
+            owner_list: vec![],
+            pauser_list: vec![pauser],
+            blacklister: blacklister,
+            modality: Some(crate::stablecoin::utils::StablecoinModality::MintAndBurn),
+        };
+        let stablecoin = setup_with_args(&env, args);
+        (
+            env,
+            master_minter,
+            controller_1,
+            minter_1,
+            blacklister,
+            pauser,
+            user,
+            stablecoin,
+        )
+    }
 
     #[test]
     fn should_transfer_full_owned_amount() {
-        // given a token
-        let mut cep18_token = setup(false);
-        let owner = cep18_token.env().get_account(0);
-        let alice = cep18_token.env().get_account(1);
+        let (env, .., mut stablecoin) = setup();
+        let owner = env.get_account(0);
+        let alice = env.get_account(1);
         let amount = TOKEN_TOTAL_SUPPLY.into();
-
-        // when the owner transfers the full amount to alice
-        cep18_token.transfer(&alice, &amount);
-
-        // then the owner has no balance
-        assert_eq!(cep18_token.balance_of(&owner), 0.into());
-
-        // and alice has the full amount
-        assert_eq!(cep18_token.balance_of(&alice), amount);
-        assert_eq!(cep18_token.total_supply(), amount);
+        stablecoin.transfer(&alice, &amount);
+        assert_eq!(stablecoin.balance_of(&owner), 0.into());
+        assert_eq!(stablecoin.balance_of(&alice), amount);
+        assert_eq!(stablecoin.total_supply(), amount);
     }
 
     #[test]
     fn should_not_transfer_more_than_owned_balance() {
-        // given a token
-        let mut cep18_token = setup(false);
-        let owner = cep18_token.env().get_account(0);
-        let alice = cep18_token.env().get_account(1);
+        let (env, .., mut stablecoin) = setup();
+        let owner = env.get_account(0);
+        let alice = env.get_account(1);
         let amount = TOKEN_TOTAL_SUPPLY.into();
-
-        // when the owner tries to transfer more than they have
-        let result = cep18_token.try_transfer(&alice, &(amount + 1));
-
-        // then the transfer fails
+        let result = stablecoin.try_transfer(&alice, &(amount + 1));
         assert_eq!(result.err().unwrap(), InsufficientBalance.into());
-
-        // and the balances remain unchanged
-        assert_eq!(cep18_token.balance_of(&owner), amount);
-        assert_eq!(cep18_token.balance_of(&alice), 0.into());
-        assert_eq!(cep18_token.total_supply(), amount);
+        assert_eq!(stablecoin.balance_of(&owner), amount);
+        assert_eq!(stablecoin.balance_of(&alice), 0.into());
+        assert_eq!(stablecoin.total_supply(), amount);
     }
 
     #[test]
     fn should_transfer_from_account_to_account() {
-        // given a token
-        let mut cep18_token = setup(false);
-        let owner = cep18_token.env().get_account(0);
-        let alice = cep18_token.env().get_account(1);
+        let (env, .., mut stablecoin) = setup();
+        let owner = env.get_account(0);
+        let alice = env.get_account(1);
         let transfer_amount = TRANSFER_AMOUNT_1.into();
         let allowance_amount = ALLOWANCE_AMOUNT_1.into();
-
-        // when the owner approves the spender to spend tokens on their behalf
-        cep18_token.approve(&alice, &allowance_amount);
-
-        // then the allowance is set
-        assert_eq!(cep18_token.allowance(&owner, &alice), allowance_amount);
-
-        // when the spender spends the tokens
-        cep18_token.env().set_caller(alice);
-        cep18_token.transfer_from(&owner, &alice, &transfer_amount);
-
-        // then the owner has less tokens
+        stablecoin.approve(&alice, &allowance_amount);
+        assert_eq!(stablecoin.allowance(&owner, &alice), allowance_amount);
+        env.set_caller(alice);
+        stablecoin.transfer_from(&owner, &alice, &transfer_amount);
         assert_eq!(
-            cep18_token.balance_of(&owner),
+            stablecoin.balance_of(&owner),
             U256::from(TOKEN_TOTAL_SUPPLY) - transfer_amount
         );
-
-        // and alice has more tokens
-        assert_eq!(cep18_token.balance_of(&alice), transfer_amount);
-
-        // and the allowance is lowered
+        assert_eq!(stablecoin.balance_of(&alice), transfer_amount);
         assert_eq!(
-            cep18_token.allowance(&owner, &alice),
+            stablecoin.allowance(&owner, &alice),
             allowance_amount - transfer_amount
         );
     }
 
     #[test]
     fn should_transfer_from_account_by_contract() {
-        let mut cep18_token = setup(false);
-        let client_contract = StablecoinClientContractHostRef::deploy(cep18_token.env(), NoArgs);
-        let spender = cep18_token.env().get_account(1);
-        let owner = cep18_token.env().get_account(0);
-
-        cep18_token.approve(client_contract.address(), &ALLOWANCE_AMOUNT_1.into());
-
-        let spender_allowance_before = cep18_token.allowance(&owner, client_contract.address());
-        let owner_balance_before = cep18_token.balance_of(&owner);
-
+        let (env, .., mut stablecoin) = setup();
+        let client_contract = StablecoinClientContractHostRef::deploy(stablecoin.env(), NoArgs);
+        let spender = env.get_account(1);
+        let owner = env.get_account(0);
+        stablecoin.approve(client_contract.address(), &ALLOWANCE_AMOUNT_1.into());
+        let spender_allowance_before = stablecoin.allowance(&owner, client_contract.address());
+        let owner_balance_before = stablecoin.balance_of(&owner);
         client_contract.transfer_from_as_stored_contract(
-            *cep18_token.address(),
+            *stablecoin.address(),
             owner,
             spender,
             ALLOWANCE_AMOUNT_1.into(),
         );
-
         assert_eq!(
             spender_allowance_before - ALLOWANCE_AMOUNT_1,
-            cep18_token.allowance(&owner, &spender)
+            stablecoin.allowance(&owner, &spender)
         );
         assert_eq!(
             owner_balance_before - ALLOWANCE_AMOUNT_1,
-            cep18_token.balance_of(&owner)
+            stablecoin.balance_of(&owner)
         );
         assert_eq!(
             U256::from(ALLOWANCE_AMOUNT_1),
-            cep18_token.balance_of(&spender)
+            stablecoin.balance_of(&spender)
         );
     }
 
     #[test]
     fn should_not_be_able_to_own_transfer() {
-        // given a token
-        let mut cep18_token = setup(false);
-        let owner = cep18_token.env().get_account(0);
+        let (env, .., mut stablecoin) = setup();
+        let owner = env.get_account(0);
         let amount = TOKEN_TOTAL_SUPPLY.into();
-
-        // when the owner tries to transfer to themselves
-        let result = cep18_token.try_transfer(&owner, &amount);
-
-        // then the transfer fails
+        let result = stablecoin.try_transfer(&owner, &amount);
         assert_eq!(result.err().unwrap(), CannotTargetSelfUser.into());
-
-        // and the balances remain unchanged
-        assert_eq!(cep18_token.balance_of(&owner), amount);
-        assert_eq!(cep18_token.total_supply(), amount);
+        assert_eq!(stablecoin.balance_of(&owner), amount);
+        assert_eq!(stablecoin.total_supply(), amount);
     }
 
     #[test]
     fn should_not_be_able_to_own_transfer_from() {
-        // given a token
-        let mut cep18_token = setup(false);
-        let owner = cep18_token.env().get_account(0);
+        let (env, .., mut stablecoin) = setup();
+        let owner = env.get_account(0);
         let amount = TOKEN_TOTAL_SUPPLY.into();
-
-        // when the owner tries to approbve themselves
-        let result = cep18_token.try_approve(&owner, &amount);
-
-        // it fails
+        let result = stablecoin.try_approve(&owner, &amount);
         assert_eq!(result.err().unwrap(), CannotTargetSelfUser.into());
-
-        // when the owner tries to transfer from themselves
-        let result = cep18_token.try_transfer_from(&owner, &owner, &amount);
-
-        // then the transfer fails
+        let result = stablecoin.try_transfer_from(&owner, &owner, &amount);
         assert_eq!(result.err().unwrap(), CannotTargetSelfUser.into());
-
-        // and the balances remain unchanged
-        assert_eq!(cep18_token.balance_of(&owner), amount);
-        assert_eq!(cep18_token.total_supply(), amount);
+        assert_eq!(stablecoin.balance_of(&owner), amount);
+        assert_eq!(stablecoin.total_supply(), amount);
     }
 
     #[test]
     fn should_verify_zero_amount_transfer_is_noop() {
-        // given a token
-        let mut cep18_token = setup(false);
-        let owner = cep18_token.env().get_account(0);
-        let alice = cep18_token.env().get_account(1);
+        let (env, .., mut stablecoin) = setup();
+        let owner = env.get_account(0);
+        let alice = env.get_account(1);
         let amount = TOKEN_TOTAL_SUPPLY.into();
-
-        // when the owner transfers zero tokens
-        cep18_token.transfer(&alice, &U256::zero());
-
-        // then the balances remain unchanged
-        assert_eq!(cep18_token.balance_of(&owner), amount);
-        assert_eq!(cep18_token.balance_of(&alice), 0.into());
-        assert_eq!(cep18_token.total_supply(), amount);
+        stablecoin.transfer(&alice, &U256::zero());
+        assert_eq!(stablecoin.balance_of(&owner), amount);
+        assert_eq!(stablecoin.balance_of(&alice), 0.into());
+        assert_eq!(stablecoin.total_supply(), amount);
     }
 
     #[test]
     fn should_verify_zero_amount_transfer_from_is_noop() {
-        // given a token
-        let mut cep18_token = setup(false);
-        let owner = cep18_token.env().get_account(0);
-        let alice = cep18_token.env().get_account(1);
+        let (env, .., mut stablecoin) = setup();
+        let owner = env.get_account(0);
+        let alice = env.get_account(1);
         let amount = TOKEN_TOTAL_SUPPLY.into();
-
-        // when the owner approves the spender to spend tokens on their behalf
-        cep18_token.approve(&alice, &ALLOWANCE_AMOUNT_1.into());
-
-        // when the owner transfers zero tokens from alice
-        cep18_token.transfer_from(&owner, &alice, &U256::zero());
-
-        // then the balances remain unchanged
-        assert_eq!(cep18_token.balance_of(&owner), amount);
-        assert_eq!(cep18_token.balance_of(&alice), 0.into());
-        assert_eq!(cep18_token.total_supply(), amount);
+        stablecoin.approve(&alice, &ALLOWANCE_AMOUNT_1.into());
+        stablecoin.transfer_from(&owner, &alice, &U256::zero());
+        assert_eq!(stablecoin.balance_of(&owner), amount);
+        assert_eq!(stablecoin.balance_of(&alice), 0.into());
+        assert_eq!(stablecoin.total_supply(), amount);
     }
 
     #[test]
     fn should_transfer() {
-        // given a token
-        let mut cep18_token = setup(false);
-        let owner = cep18_token.env().get_account(0);
-        let client_contract = StablecoinClientContractHostRef::deploy(cep18_token.env(), NoArgs);
-
-        // when the owner transfers tokens to another contract
-        cep18_token.transfer(client_contract.address(), &TRANSFER_AMOUNT_1.into());
-
-        // then the balances are updated
+        let (env, .., mut stablecoin) = setup();
+        let owner = env.get_account(0);
+        let client_contract = StablecoinClientContractHostRef::deploy(stablecoin.env(), NoArgs);
+        stablecoin.transfer(client_contract.address(), &TRANSFER_AMOUNT_1.into());
         assert_eq!(
-            cep18_token.balance_of(&owner),
+            stablecoin.balance_of(&owner),
             (TOKEN_TOTAL_SUPPLY - TRANSFER_AMOUNT_1).into()
         );
         assert_eq!(
-            cep18_token.balance_of(client_contract.address()),
+            stablecoin.balance_of(client_contract.address()),
             TRANSFER_AMOUNT_1.into()
         );
-
-        // when the token transfers tokens to yet another contract
         client_contract.transfer_as_stored_contract(
-            *cep18_token.address(),
-            *cep18_token.address(),
+            *stablecoin.address(),
+            *stablecoin.address(),
             TRANSFER_AMOUNT_1.into(),
         );
-
-        // then the balances are updated
-        assert_eq!(cep18_token.balance_of(client_contract.address()), 0.into());
+        assert_eq!(stablecoin.balance_of(client_contract.address()), 0.into());
         assert_eq!(
-            cep18_token.balance_of(cep18_token.address()),
+            stablecoin.balance_of(stablecoin.address()),
             TRANSFER_AMOUNT_1.into()
         );
     }

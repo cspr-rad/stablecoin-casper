@@ -3,8 +3,8 @@ mod allowance_tests {
     use crate::stablecoin::errors::Error::InsufficientAllowance;
     use crate::stablecoin::tests::client_contract_test::StablecoinClientContractHostRef;
     use crate::stablecoin_contract::tests::{
-        invert_address, setup_with_args, ALLOWANCE_AMOUNT_1, ALLOWANCE_AMOUNT_2,
-        TOKEN_DECIMALS, TOKEN_NAME, TOKEN_SYMBOL, TOKEN_TOTAL_SUPPLY, TRANSFER_AMOUNT_1,
+        invert_address, setup_with_args, ALLOWANCE_AMOUNT_1, ALLOWANCE_AMOUNT_2, TOKEN_DECIMALS,
+        TOKEN_NAME, TOKEN_SYMBOL, TOKEN_TOTAL_SUPPLY, TRANSFER_AMOUNT_1,
     };
     use crate::stablecoin_contract::{StablecoinHostRef, StablecoinInitArgs};
     use core::ops::Add;
@@ -53,7 +53,6 @@ mod allowance_tests {
         )
     }
 
-
     fn test_approve_for(
         stablecoin: &mut StablecoinHostRef,
         sender: Address,
@@ -64,10 +63,16 @@ mod allowance_tests {
         assert_eq!(stablecoin.allowance(&owner, &spender), 0.into());
         stablecoin.env().set_caller(sender);
         stablecoin.approve(&spender, &amount);
-        assert!(stablecoin.env().emitted(stablecoin, "SetAllowance"), "SetAllowance event not emitted");
+        assert!(
+            stablecoin.env().emitted(stablecoin, "SetAllowance"),
+            "SetAllowance event not emitted"
+        );
         assert_eq!(stablecoin.allowance(&owner, &spender), amount);
         stablecoin.approve(&spender, &(amount.add(U256::one())));
-        assert!(stablecoin.env().emitted(stablecoin, "SetAllowance"), "SetAllowance event not emitted");
+        assert!(
+            stablecoin.env().emitted(stablecoin, "SetAllowance"),
+            "SetAllowance event not emitted"
+        );
         assert_eq!(
             stablecoin.allowance(&owner, &spender),
             amount.add(U256::one())
@@ -87,7 +92,8 @@ mod allowance_tests {
         let alice = env.get_account(1);
         let token_address = *stablecoin.address();
         let client_contract = StablecoinClientContractHostRef::deploy(stablecoin.env(), NoArgs);
-        let another_client_contract = StablecoinClientContractHostRef::deploy(stablecoin.env(), NoArgs);
+        let another_client_contract =
+            StablecoinClientContractHostRef::deploy(stablecoin.env(), NoArgs);
         let client_contract_address = client_contract.address();
         let another_client_contract_address = another_client_contract.address();
         test_approve_for(&mut stablecoin, owner, owner, alice);
@@ -121,7 +127,10 @@ mod allowance_tests {
             *another_client_contract_address,
             ALLOWANCE_AMOUNT_1.into(),
         );
-        assert!(stablecoin.env().emitted(&stablecoin, "TransferFrom"), "TransferFrom event not emitted");
+        assert!(
+            stablecoin.env().emitted(&stablecoin, "TransferFrom"),
+            "TransferFrom event not emitted"
+        );
         assert_eq!(
             stablecoin.balance_of(another_client_contract_address),
             ALLOWANCE_AMOUNT_1.into()
@@ -156,13 +165,19 @@ mod allowance_tests {
             ALLOWANCE_AMOUNT_1.into()
         );
         stablecoin.decrease_allowance(&alice, &ALLOWANCE_AMOUNT_2.into());
-        assert!(stablecoin.env().emitted(&stablecoin, "DecreaseAllowance"), "DecreaseAllowance event not emitted");
+        assert!(
+            stablecoin.env().emitted(&stablecoin, "DecreaseAllowance"),
+            "DecreaseAllowance event not emitted"
+        );
         assert_eq!(
             stablecoin.allowance(&owner, &alice),
             (ALLOWANCE_AMOUNT_1 - ALLOWANCE_AMOUNT_2).into()
         );
         stablecoin.increase_allowance(&alice, &ALLOWANCE_AMOUNT_1.into());
-        assert!(stablecoin.env().emitted(&stablecoin, "IncreaseAllowance"), "IncreaseAllowance event not emitted");
+        assert!(
+            stablecoin.env().emitted(&stablecoin, "IncreaseAllowance"),
+            "IncreaseAllowance event not emitted"
+        );
         assert_eq!(
             stablecoin.allowance(&owner, &alice),
             ((ALLOWANCE_AMOUNT_1 * 2) - ALLOWANCE_AMOUNT_2).into()

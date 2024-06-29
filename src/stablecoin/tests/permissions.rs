@@ -119,8 +119,9 @@ mod test_permissions {
     }
 
     #[test]
-    fn must_not_mint_when_paused(){
-        let (env, master_minter, controller_1, minter_1, .., pauser, user, mut stablecoin) = setup();
+    fn must_not_mint_when_paused() {
+        let (env, master_minter, controller_1, minter_1, .., pauser, user, mut stablecoin) =
+            setup();
         env.set_caller(master_minter);
         stablecoin.configure_controller(&controller_1, &minter_1);
         env.set_caller(controller_1);
@@ -129,7 +130,7 @@ mod test_permissions {
         stablecoin.pause();
         env.set_caller(minter_1);
         let result: Result<(), odra::OdraError> = stablecoin.try_mint(&user, U256::from(10));
-        match result{
+        match result {
             Ok(_) => {
                 panic!("Security Incident: Illegal mint went through!")
             }

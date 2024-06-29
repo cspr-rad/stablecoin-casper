@@ -12,8 +12,8 @@ use crate::stablecoin::events::{
 use crate::stablecoin::storage::Roles::{self, Role};
 use crate::stablecoin::storage::{
     StablecoinAllowancesStorage, StablecoinBalancesStorage, StablecoinDecimalsStorage,
-    StablecoinMinterAllowancesStorage, StablecoinNameStorage, StablecoinSymbolStorage, StablecoinTotalSupplyStorage,
-    StablecoinRoles,
+    StablecoinMinterAllowancesStorage, StablecoinNameStorage, StablecoinRoles,
+    StablecoinSymbolStorage, StablecoinTotalSupplyStorage,
 };
 use crate::stablecoin::utils::StablecoinModality;
 
