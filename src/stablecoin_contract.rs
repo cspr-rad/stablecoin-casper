@@ -206,35 +206,32 @@ impl Stablecoin {
     }
 
     /// Burns the given amount of tokens from the given address.
-    pub fn burn(&mut self, owner: &Address, amount: &U256) {
+    pub fn burn(&mut self, amount: U256) {
         self.assert_burn_and_mint_enabled();
-
-        if self.env().caller() != *owner {
-            self.env().revert(Error::InvalidBurnTarget);
+        self.require_not_role(&self.caller(), &Roles::Blacklisted);
+        self.require_role(&self.caller(), &Roles::Minter);
+        if amount == U256::zero() {
+            self.env().revert(Error::InvalidAmount)
         }
-
-        if self.balance_of(owner) < *amount {
-            self.env().revert(Error::InsufficientBalance);
+        let minter_allowance: U256 = self.minter_allowances.get_or_default(&self.env().caller());
+        // minter allowance must be sufficient
+        if &minter_allowance < &amount {
+            self.env().revert(Error::InsufficientMinterAllowance);
         }
-
-        self.raw_burn(owner, amount);
+        self.minter_allowances.subtract(&self.caller(), amount);
+        self.raw_burn(&self.caller(), &amount);
     }
-
-    // Functions that are specific to Stablecoin start here
 
     /// Mints new tokens and assigns them to the given address.
     pub fn mint(&mut self, owner: &Address, amount: U256) {
         self.require_role(&self.caller(), &Roles::Minter);
         self.require_not_role(owner, &Roles::Blacklisted);
         self.assert_burn_and_mint_enabled();
-        // minter allowance must be sufficient
         let minter_allowance: U256 = self.minter_allowances.get_or_default(&self.env().caller());
-        if minter_allowance < amount {
+        if &minter_allowance < &amount {
             self.env().revert(Error::InsufficientMinterAllowance);
         }
-        // decrease minter allowance
-        self.minter_allowances
-            .subtract(&self.env().caller(), amount);
+        self.minter_allowances.subtract(&self.caller(), amount);
         self.raw_mint(owner, &amount);
     }
 
@@ -425,7 +422,6 @@ impl Stablecoin {
     /// Transfers tokens from the sender to the recipient without checking the permissions.
     fn raw_transfer(&mut self, sender: &Address, recipient: &Address, amount: &U256) {
         self.require_unpaused();
-        self.require_not_role(&self.caller(), &Roles::Blacklisted);
         if *amount > self.balances.get_or_default(sender) {
             self.env().revert(Error::InsufficientBalance)
         }
@@ -445,7 +441,6 @@ impl Stablecoin {
     /// Mints new tokens and assigns them to the given address without checking the permissions.
     fn raw_mint(&mut self, owner: &Address, amount: &U256) {
         self.require_unpaused();
-        self.require_not_role(&self.caller(), &Roles::Blacklisted);
         self.total_supply.add(*amount);
         self.balances.add(owner, *amount);
 
@@ -458,7 +453,6 @@ impl Stablecoin {
     /// Burns the given amount of tokens from the given address without checking the permissions.
     fn raw_burn(&mut self, owner: &Address, amount: &U256) {
         self.require_unpaused();
-        self.require_not_role(&self.caller(), &Roles::Blacklisted);
         self.total_supply.subtract(*amount);
         self.balances.subtract(owner, *amount);
 

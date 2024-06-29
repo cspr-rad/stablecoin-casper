@@ -53,4 +53,6 @@ pub enum Error {
     ContractIsPaused = 60024,
     /// The contract is in an invalid state. This error should never happen.
     InvalidState = 60100,
+    /// Trying to burn an invalid amount e.g. 0
+    InvalidAmount = 60101,
 }
