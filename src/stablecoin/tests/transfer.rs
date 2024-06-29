@@ -1,57 +1,13 @@
 #[cfg(test)]
 mod transfer_tests {
     use odra::casper_types::U256;
-    use odra::host::{Deployer, HostEnv, HostRef, NoArgs};
-    use odra::Address;
+    use odra::host::{Deployer, HostRef, NoArgs};
 
     use crate::stablecoin::errors::Error::{CannotTargetSelfUser, InsufficientBalance};
     use crate::stablecoin::tests::client_contract_test::StablecoinClientContractHostRef;
     use crate::stablecoin_contract::tests::{
-        setup_with_args, ALLOWANCE_AMOUNT_1, TOKEN_DECIMALS, TOKEN_NAME, TOKEN_SYMBOL,
-        TOKEN_TOTAL_SUPPLY, TRANSFER_AMOUNT_1,
+        setup, ALLOWANCE_AMOUNT_1, TOKEN_TOTAL_SUPPLY, TRANSFER_AMOUNT_1,
     };
-    use crate::stablecoin_contract::{StablecoinHostRef, StablecoinInitArgs};
-
-    fn setup() -> (
-        HostEnv,
-        Address,
-        Address,
-        Address,
-        Address,
-        Address,
-        Address,
-        StablecoinHostRef,
-    ) {
-        let env = odra_test::env();
-        let master_minter = env.get_account(1);
-        let controller_1 = env.get_account(2);
-        let minter_1 = env.get_account(3);
-        let blacklister = env.get_account(4);
-        let pauser = env.get_account(5);
-        let user = env.get_account(6);
-        let args = StablecoinInitArgs {
-            symbol: TOKEN_SYMBOL.to_string(),
-            name: TOKEN_NAME.to_string(),
-            decimals: TOKEN_DECIMALS,
-            initial_supply: TOKEN_TOTAL_SUPPLY.into(),
-            master_minter_list: vec![master_minter],
-            owner_list: vec![],
-            pauser_list: vec![pauser],
-            blacklister: blacklister,
-            modality: Some(crate::stablecoin::utils::StablecoinModality::MintAndBurn),
-        };
-        let stablecoin = setup_with_args(&env, args);
-        (
-            env,
-            master_minter,
-            controller_1,
-            minter_1,
-            blacklister,
-            pauser,
-            user,
-            stablecoin,
-        )
-    }
 
     #[test]
     fn should_transfer_full_owned_amount() {

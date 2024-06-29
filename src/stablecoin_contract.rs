@@ -480,8 +480,6 @@ impl Stablecoin {
 pub(crate) mod tests {
     use alloc::string::ToString;
     use alloc::vec;
-
-    use crate::stablecoin::utils::StablecoinModality;
     use odra::casper_types::account::AccountHash;
     use odra::casper_types::ContractPackageHash;
     use odra::host::{Deployer, HostEnv, HostRef};
@@ -497,27 +495,45 @@ pub(crate) mod tests {
     pub const ALLOWANCE_AMOUNT_1: u64 = 456_789;
     pub const ALLOWANCE_AMOUNT_2: u64 = 87_654;
 
-    pub fn setup(enable_mint_and_burn: bool) -> StablecoinHostRef {
+    pub fn setup() -> (
+        HostEnv,
+        Address,
+        Address,
+        Address,
+        Address,
+        Address,
+        Address,
+        StablecoinHostRef,
+    ) {
         let env = odra_test::env();
-        let modality = if enable_mint_and_burn {
-            StablecoinModality::MintAndBurn
-        } else {
-            StablecoinModality::None
-        };
-        let blacklister = env.get_account(3);
-
-        let init_args = StablecoinInitArgs {
+        let master_minter = env.get_account(1);
+        let controller_1 = env.get_account(2);
+        let minter_1 = env.get_account(3);
+        let blacklister = env.get_account(4);
+        let pauser = env.get_account(5);
+        let user = env.get_account(6);
+        let args = StablecoinInitArgs {
             symbol: TOKEN_SYMBOL.to_string(),
             name: TOKEN_NAME.to_string(),
             decimals: TOKEN_DECIMALS,
             initial_supply: TOKEN_TOTAL_SUPPLY.into(),
-            master_minter_list: vec![],
+            master_minter_list: vec![master_minter],
             owner_list: vec![],
-            pauser_list: vec![],
+            pauser_list: vec![pauser],
             blacklister: blacklister,
-            modality: Some(modality),
+            modality: Some(crate::stablecoin::utils::StablecoinModality::MintAndBurn),
         };
-        setup_with_args(&env, init_args)
+        let stablecoin = setup_with_args(&env, args);
+        (
+            env,
+            master_minter,
+            controller_1,
+            minter_1,
+            blacklister,
+            pauser,
+            user,
+            stablecoin,
+        )
     }
 
     pub fn setup_with_args(env: &HostEnv, args: StablecoinInitArgs) -> StablecoinHostRef {
@@ -533,24 +549,24 @@ pub(crate) mod tests {
 
     #[test]
     fn should_have_queryable_properties() {
-        let stablecoin_token = setup(false);
+        let (env, .., stablecoin) = setup();
 
-        assert_eq!(stablecoin_token.name(), TOKEN_NAME);
-        assert_eq!(stablecoin_token.symbol(), TOKEN_SYMBOL);
-        assert_eq!(stablecoin_token.decimals(), TOKEN_DECIMALS);
-        assert_eq!(stablecoin_token.total_supply(), TOKEN_TOTAL_SUPPLY.into());
+        assert_eq!(stablecoin.name(), TOKEN_NAME);
+        assert_eq!(stablecoin.symbol(), TOKEN_SYMBOL);
+        assert_eq!(stablecoin.decimals(), TOKEN_DECIMALS);
+        assert_eq!(stablecoin.total_supply(), TOKEN_TOTAL_SUPPLY.into());
 
-        let admin_key = stablecoin_token.env().caller();
-        let admin_balance = stablecoin_token.balance_of(&admin_key);
+        let admin_key = env.caller();
+        let admin_balance = stablecoin.balance_of(&admin_key);
         assert_eq!(admin_balance, TOKEN_TOTAL_SUPPLY.into());
 
-        let contract_balance = stablecoin_token.balance_of(stablecoin_token.address());
+        let contract_balance = stablecoin.balance_of(stablecoin.address());
         assert_eq!(contract_balance, 0.into());
 
         // Ensures that Account and Contract ownership is respected, and we're not keying ownership under
         // the raw bytes regardless of variant.
         let inverted_admin_key = invert_address(admin_key);
-        let inverted_admin_balance = stablecoin_token.balance_of(&inverted_admin_key);
+        let inverted_admin_balance = stablecoin.balance_of(&inverted_admin_key);
         assert_eq!(inverted_admin_balance, 0.into());
     }
 }
