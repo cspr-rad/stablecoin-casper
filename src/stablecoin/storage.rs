@@ -323,30 +323,7 @@ impl StablecoinRoles {
     pub fn is_owner(&self, account: &Address) -> bool {
         self.has_role(&Roles::Owner, account)
     }
-
-    /*fn get_roles(&self, account: &Address) -> Vec<bool> {
-        // todo: ensure these are in order
-        let mut roles: Vec<bool> = Vec::new();
-        roles.push(self.is_minter(account));
-        roles.push(self.is_master_minter(account));
-        roles.push(self.is_blacklister(account));
-        roles.push(self.is_blacklisted(account));
-        roles.push(self.is_pauser(account));
-        roles.push(self.is_controller(account));
-        roles.push(self.is_owner(account));
-        roles
-    }*/
-
     pub fn has_role(&self, role: &Roles::Role, account: &Address) -> bool {
         self.roles.get_or_default(&(*role, *account))
     }
-
-    /*fn key(&self, account: &Address) -> [u8; 64] {
-        let mut result = [0u8; 64];
-        let mut preimage = Vec::new();
-        preimage.append(&mut account.to_bytes().unwrap_or_revert(&self.env()));
-        let key_bytes = self.env().hash(&preimage);
-        odra::utils::hex_to_slice(&key_bytes, &mut result);
-        result
-    }*/
 }
