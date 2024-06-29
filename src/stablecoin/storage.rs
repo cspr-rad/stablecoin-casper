@@ -10,6 +10,7 @@ use crate::stablecoin::errors::Error::{InvalidState, Overflow};
 
 use base64::prelude::*;
 
+use super::events::{RoleConfigured, RoleRevoked};
 use super::utils::Role;
 
 const ALLOWANCES_KEY: &str = "allowances";
@@ -259,7 +260,7 @@ impl Cep18MinterAllowancesStorage {
     }
 }
 
-#[odra::module]
+#[odra::module(events=[RoleConfigured, RoleRevoked])]
 /// Storage module for the allowances of the token.
 pub struct StablecoinRoles;
 
@@ -267,16 +268,24 @@ pub struct StablecoinRoles;
 impl StablecoinRoles {
     pub fn configure_role(&self, account: &Address, role: Role) {
         let mut roles: Vec<bool> = self.get_roles(account);
-        roles.insert(role as usize, true);
+        roles.insert(role.clone() as usize, true);
         self.env()
             .set_dictionary_value(STABLECOIN_ROLES_KEY, &self.key(account), roles);
+        self.env().emit_event(RoleConfigured{
+            role,
+            account: *account
+        });
     }
 
     pub fn revoke_role(&self, account: &Address, role: Role) {
         let mut roles: Vec<bool> = self.get_roles(account);
-        roles.insert(role as usize, false);
+        roles.insert(role.clone() as usize, false);
         self.env()
             .set_dictionary_value(STABLECOIN_ROLES_KEY, &self.key(account), roles);
+        self.env().emit_event(RoleRevoked{
+            role,
+            account: *account
+        });
     }
 
     pub fn is_minter(&self, account: &Address) -> bool {
