@@ -5,7 +5,7 @@ mod transfer_tests {
 
     use crate::stablecoin::errors::Error::{CannotTargetSelfUser, InsufficientBalance};
     use crate::stablecoin::tests::client_contract_test::StablecoinClientContractHostRef;
-    use crate::stablecoin_contract::tests::{
+    use crate::stablecoin::setup_tests::{
         setup, ALLOWANCE_AMOUNT_1, TOKEN_TOTAL_SUPPLY, TRANSFER_AMOUNT_1,
     };
 

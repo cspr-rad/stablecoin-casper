@@ -2,6 +2,12 @@
 use odra::prelude::*;
 use odra::{casper_types::U256, Address, Mapping, SubModule, UnwrapOrRevert, Var};
 
+mod tests;
+pub mod errors;
+pub mod events;
+pub mod storage;
+pub mod utils;
+
 use crate::stablecoin::errors::Error;
 
 use crate::stablecoin::events::{
@@ -465,7 +471,7 @@ impl Stablecoin {
 }
 
 #[cfg(test)]
-pub(crate) mod tests {
+pub (crate) mod setup_tests {
     use alloc::string::ToString;
     use alloc::vec;
     use odra::casper_types::account::AccountHash;
@@ -473,7 +479,7 @@ pub(crate) mod tests {
     use odra::host::{Deployer, HostEnv, HostRef};
     use odra::Address;
 
-    use crate::stablecoin_contract::{StablecoinHostRef, StablecoinInitArgs};
+    use crate::stablecoin::{StablecoinHostRef, StablecoinInitArgs};
 
     pub const TOKEN_NAME: &str = "USDCoin";
     pub const TOKEN_SYMBOL: &str = "USDC";

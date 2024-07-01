@@ -1,10 +1,10 @@
 #[cfg(test)]
 mod test_permissions {
     use crate::stablecoin::utils::StablecoinModality;
-    use crate::stablecoin_contract::tests::{
+    use crate::stablecoin::setup_tests::{
         setup_with_args, TOKEN_DECIMALS, TOKEN_NAME, TOKEN_SYMBOL, TOKEN_TOTAL_SUPPLY,
     };
-    use crate::stablecoin_contract::{StablecoinHostRef, StablecoinInitArgs};
+    use crate::stablecoin::{StablecoinHostRef, StablecoinInitArgs};
     use alloc::string::ToString;
     use alloc::vec;
     use odra::casper_types::U256;

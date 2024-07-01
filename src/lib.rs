@@ -3,4 +3,3 @@
 extern crate alloc;
 
 pub mod stablecoin;
-pub mod stablecoin_contract;

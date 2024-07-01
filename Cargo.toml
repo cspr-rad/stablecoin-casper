@@ -1,5 +1,5 @@
 [package]
-name = "usdc_orda"
+name = "stablecoin-casper"
 version = "0.1.0"
 edition = "2021"
 
@@ -17,12 +17,12 @@ odra-build = { version = "1.1.0", features = [], default-features = false }
 odra-build = { version = "1.1.0", features = [], default-features = false }
 
 [[bin]]
-name = "usdc_orda_build_contract"
+name = "stablecoin_casper_build_contract"
 path = "bin/build_contract.rs"
 test = false
 
 [[bin]]
-name = "usdc_orda_build_schema"
+name = "stablecoin_casper_build_schema"
 path = "bin/build_schema.rs"
 test = false
 

@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod mint_and_burn_tests {
-    use crate::stablecoin_contract::tests::setup;
+    use crate::stablecoin::setup_tests::setup;
     use odra::casper_types::U256;
     use odra::host::HostRef;
 

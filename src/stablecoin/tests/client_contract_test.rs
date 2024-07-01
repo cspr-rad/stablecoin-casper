@@ -1,4 +1,4 @@
-use crate::stablecoin_contract::StablecoinContractRef;
+use crate::stablecoin::StablecoinContractRef;
 use odra::casper_types::U256;
 use odra::prelude::*;
 use odra::Address;

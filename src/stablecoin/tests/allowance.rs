@@ -2,11 +2,11 @@
 mod allowance_tests {
     use crate::stablecoin::errors::Error::InsufficientAllowance;
     use crate::stablecoin::tests::client_contract_test::StablecoinClientContractHostRef;
-    use crate::stablecoin_contract::tests::{
+    use crate::stablecoin::setup_tests::{
         invert_address, setup, setup_with_args, ALLOWANCE_AMOUNT_1, ALLOWANCE_AMOUNT_2,
         TOKEN_DECIMALS, TOKEN_NAME, TOKEN_SYMBOL, TOKEN_TOTAL_SUPPLY, TRANSFER_AMOUNT_1,
     };
-    use crate::stablecoin_contract::{StablecoinHostRef, StablecoinInitArgs};
+    use crate::stablecoin::{StablecoinHostRef, StablecoinInitArgs};
     use core::ops::Add;
     use odra::casper_types::U256;
     use odra::host::{Deployer, HostRef, NoArgs};
